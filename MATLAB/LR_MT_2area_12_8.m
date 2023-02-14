@@ -36,6 +36,8 @@ tau_dI = 5; % 衰减时间常数（I）(ms)
 cp = [0.1, 0.1, 0.05, 0.2]; % 连接概率(E←E, E←I, I←E, I←I)
 
 
+
+
 % conn_EsEs = 2*randn(N_E/2,N_E/2); % 连接矩阵(Es←Es)
 conn_EsEs = 2*randn(N_E/2,1); % 连接矩阵(Es←Es),标准差为2的高斯分布
 conn_EsEs = 1./(1+exp(-conn_EsEs))*2; %施加Sigmoid并乘二
