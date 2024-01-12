@@ -50,14 +50,14 @@ class LowRankSNN:
         # print('Positive Weights occupy: %2.2f %%'%(pos_w/(self.N**2)*100))
         # print('Negative Weights occupy: %2.2f %%'%(neg_w/(self.N**2)*100))
 
-    def show_conn(self):
+    def show_conn(self, maxvalue = 0.001):
         full_w = self.conn.copy() #包含兴奋和抑制性信息的连接矩阵
         # let the weight from Inhibitory be negative value
         full_w[:,self.N_E:self.N_E+self.N_I] = -full_w[:,self.N_E:self.N_E+self.N_I]
         colors = [(0, 0, 1), (1, 1, 1), (1, 0, 0)]  # 蓝 -> 白 -> 红
         cmap_name = 'gradient_div_cmap'
         gradient_cm = mcolors.LinearSegmentedColormap.from_list(cmap_name, colors, N=100)  # N=100 使渐变更加平滑
-        plt.imshow(full_w,cmap=gradient_cm,vmax=0.001,vmin=-0.001)
+        plt.imshow(full_w,cmap=gradient_cm,vmax = maxvalue,vmin = -maxvalue)
         plt.colorbar()
         plt.title('Connectivity Matrix')
         plt.xlabel('From')
