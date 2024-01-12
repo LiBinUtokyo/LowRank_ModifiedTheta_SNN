@@ -261,7 +261,7 @@ def Draw_RasterPlot(ax,data,title_name,dt,input_data,N_E,N_I):
 
 
 def Draw_Voltage(ax,data,color_data,label_data,dt,input_data):
-    print(len(data) == 0)
+    # print(len(data) == 0)
     if len(data) == 0: return
     tt = np.array(range(len(data[0])))*dt
     
