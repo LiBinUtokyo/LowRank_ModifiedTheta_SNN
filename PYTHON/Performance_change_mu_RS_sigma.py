@@ -1,7 +1,7 @@
 '''
 用于重现精密工学会发表Figure1的图
 改变Gamma分布的mu,random strength和sigma看performance的变化
-
+N_E = 5000
 
 mu从1到100一步一测 即range(1,101) RS = 0.1, sigma = 10
 random Strength从 0 到 10, 即range(11) mu = 50, sigma = 10
@@ -89,21 +89,22 @@ sigma_all = range(1,71)
 perf_mu = []
 perf_RS = []
 perf_sigma = []
-# # 测试mu
-# for mu in mu_all:
-#     perf = test(mu,0.1,10)
-#     perf_mu.append(perf)
 
-# with open('prop_change_mu.csv','a+',newline='') as f:
-#     csv.writer(f).writerow(mu_all)
-#     csv.writer(f).writerow(perf_mu)
-# # 测试RS
-# for RandomS in RandomS_all:
-#     perf = test(50,RandomS,10)
-#     perf_RS.append(perf)
-# with open('prop_change_RS.csv','a+',newline='') as f:
-#     csv.writer(f).writerow(RandomS_all)
-#     csv.writer(f).writerow(perf_RS)
+# 测试mu
+for mu in mu_all:
+    perf = test(mu,0.1,10)
+    perf_mu.append(perf)
+
+with open('prop_change_mu.csv','a+',newline='') as f:
+    csv.writer(f).writerow(mu_all)
+    csv.writer(f).writerow(perf_mu)
+# 测试RS
+for RandomS in RandomS_all:
+    perf = test(50,RandomS,10)
+    perf_RS.append(perf)
+with open('prop_change_RS.csv','a+',newline='') as f:
+    csv.writer(f).writerow(RandomS_all)
+    csv.writer(f).writerow(perf_RS)
 # 测试sigma
 for sigma in sigma_all:
     perf = test(50,0.1,sigma)
