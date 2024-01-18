@@ -5,7 +5,7 @@
 
 mu从1到100一步一测 即range(1,101) RS = 0.1, sigma = 10
 random Strength从 0 到 10, 即range(11) mu = 50, sigma = 10
-sigma从0到70 range(71) mu = 50, RS = 0.1
+sigma从1到70 range(71) mu = 50, RS = 0.1
 
 得到的结果存到名为prop_change_mu.csv,prop_change_RS.csv,prop_change_sigma.csv的文件中, 第一行是自变量, 第二行是performance
 '''
@@ -15,7 +15,7 @@ import csv
 
 def test(mu,RandomS,sigma):
     # Initialiazation
-    LRSNN = lowrankSNN.LowRankSNN(N_E=5000,N_I=0,RS=RandomS,IS=1,taud_E=2,taud_I=5)
+    LRSNN = lowrankSNN.LowRankSNN(N_E=5000,N_I=0,RS=RandomS,taud_E=2,taud_I=5)
     #low rank文献的N=5000
     # Go_NoGo Task
     # Prepare the Stimuli and Readout Vector
@@ -84,26 +84,26 @@ def test(mu,RandomS,sigma):
 
 mu_all = range(1,101)
 RandomS_all = range(11)
-sigma_all = range(71)
+sigma_all = range(1,71)
 
 perf_mu = []
 perf_RS = []
 perf_sigma = []
-# 测试mu
-for mu in mu_all:
-    perf = test(mu,0.1,10)
-    perf_mu.append(perf)
+# # 测试mu
+# for mu in mu_all:
+#     perf = test(mu,0.1,10)
+#     perf_mu.append(perf)
 
-with open('prop_change_mu.csv','a+',newline='') as f:
-    csv.writer(f).writerow(mu_all)
-    csv.writer(f).writerow(perf_mu)
-# 测试RS
-for RandomS in RandomS_all:
-    perf = test(50,RandomS,10)
-    perf_RS.append(perf)
-with open('prop_change_RS.csv','a+',newline='') as f:
-    csv.writer(f).writerow(RandomS_all)
-    csv.writer(f).writerow(perf_RS)
+# with open('prop_change_mu.csv','a+',newline='') as f:
+#     csv.writer(f).writerow(mu_all)
+#     csv.writer(f).writerow(perf_mu)
+# # 测试RS
+# for RandomS in RandomS_all:
+#     perf = test(50,RandomS,10)
+#     perf_RS.append(perf)
+# with open('prop_change_RS.csv','a+',newline='') as f:
+#     csv.writer(f).writerow(RandomS_all)
+#     csv.writer(f).writerow(perf_RS)
 # 测试sigma
 for sigma in sigma_all:
     perf = test(50,0.1,sigma)

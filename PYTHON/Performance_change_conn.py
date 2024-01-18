@@ -34,7 +34,7 @@ prop_origin=[]
 for rep in range(40):
     # Initialiazation
     # LRSNN = lowrankSNN.LowRankSNN(N_E=4000,N_I=1000,RS= 1,IS=100,taud_E=2,taud_I=5)
-    LRSNN = lowrankSNN.LowRankSNN(N_E=200,N_I=50,RS= 1,IS=100,taud_E=2,taud_I=5)
+    LRSNN = lowrankSNN.LowRankSNN(N_E=200,N_I=50,RS= 1,taud_E=2,taud_I=5)
     # Go_NoGo Task
     # Prepare the Stimuli and Readout Vector
     temp = np.random.rand(1,LRSNN.N_E+LRSNN.N_I) #Size (1,N_E) for Sti_go and nogo #把Low Rank加到整个网络上

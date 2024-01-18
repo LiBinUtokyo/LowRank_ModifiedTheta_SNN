@@ -17,9 +17,9 @@ for rep in range(40):
     # LRSNN = lowrankSNN.LowRankSNN(N_E=4000,N_I=1000,RS= 1,IS=100,taud_E=2,taud_I=5)
     # 偶次循环只用exc，奇次循环用exc+inh
     if rep % 2 == 0:
-        LRSNN = lowrankSNN.LowRankSNN(N_E=250,N_I=0,RS= 1,IS=100,taud_E=2,taud_I=5)
+        LRSNN = lowrankSNN.LowRankSNN(N_E=250,N_I=0,RS= 1,taud_E=2,taud_I=5)
     else:
-        LRSNN = lowrankSNN.LowRankSNN(N_E=200,N_I=50,RS= 1,IS=100,taud_E=2,taud_I=5)
+        LRSNN = lowrankSNN.LowRankSNN(N_E=200,N_I=50,RS= 1,taud_E=2,taud_I=5)
 
     # Go_NoGo Task
     # Prepare the Stimuli and Readout Vector
