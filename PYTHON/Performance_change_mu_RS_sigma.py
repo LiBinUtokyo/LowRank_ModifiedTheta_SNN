@@ -4,29 +4,38 @@
 N_E = 5000
 
 mu从1到100一步一测 即range(1,101) RS = 0.1, sigma = 10
-random Strength从 0 到 10, 即range(11) mu = 50, sigma = 10
+random Strength从 0 到 10,步长为0.5, 即range(0,10.5,0.5) mu = 50, sigma = 10
 sigma从1到70 range(71) mu = 50, RS = 0.1
 
 得到的结果存到名为prop_change_mu.csv,prop_change_RS.csv,prop_change_sigma.csv的文件中, 第一行是自变量, 第二行是performance
+
+先保证一次测试的结果和Matlab代码基本一致再开始大规模测试
+
+
 '''
 import lowrankSNN
 import numpy as np
 import csv
+import matplotlib.pyplot as plt
+
+
 
 def test(mu,RandomS,sigma):
     # Initialiazation
     LRSNN = lowrankSNN.LowRankSNN(N_E=5000,N_I=0,RS=RandomS,taud_E=2,taud_I=5)
+    # LRSNN = lowrankSNN.LowRankSNN(N_E=500,N_I=0,RS=RandomS,taud_E=2,taud_I=5)
     #low rank文献的N=5000
+    IS = 3 #Input strength
     # Go_NoGo Task
     # Prepare the Stimuli and Readout Vector
     temp = np.random.rand(1,LRSNN.N_E+LRSNN.N_I) #Size (1,N_E) for Sti_go and nogo #这里我想试试把Low Rank加到整个网络上
     Sti_go = temp.copy()
     Sti_nogo = temp.copy()
     W_out = temp.copy()
-    Sti_go[Sti_go>1/3] = 0
-    Sti_nogo[Sti_nogo<1/3] = 0
-    Sti_nogo[Sti_nogo>2/3] = 0
-    W_out[W_out<2/3] = 0
+    Sti_go[Sti_go>1/30] = 0
+    Sti_nogo[Sti_nogo<14/30] = 0
+    Sti_nogo[Sti_nogo>15/30] = 0
+    W_out[W_out<29/30] = 0
 
     # Use Gamma Distribution to generate Stimuli and Readout Vector
     # mean and std of Gamma Distribution(Deside Sti_go,Sti_nogo,W_out,conn_rand)
@@ -42,7 +51,9 @@ def test(mu,RandomS,sigma):
     # Low Rank Connectivity (Rank = 1)
     conn_LR = W_out*Sti_go/(LRSNN.N_E+LRSNN.N_I) # 为什么除以神经元总数?
     # Random Connectivity
-    conn_rand = np.random.gamma(a,b,(LRSNN.N_E+LRSNN.N_I,LRSNN.N_E+LRSNN.N_I)) #这里的Gamma分布取值也需要讨论
+    # conn_rand = np.random.gamma(a,b,(LRSNN.N_E+LRSNN.N_I,LRSNN.N_E+LRSNN.N_I)) #这里的Gamma分布取值也需要讨论
+    conn_rand = np.abs(np.random.normal(0,1/(LRSNN.N_E+LRSNN.N_I),(LRSNN.N_E+LRSNN.N_I,LRSNN.N_E+LRSNN.N_I))) #改回和原来一样的形式
+
 
     # # Use Folded Gaussian Distribution to generate Stimuli and Readout Vector
     # std_Sti = 2. #Standerd Deviration of Stimuli
@@ -75,11 +86,24 @@ def test(mu,RandomS,sigma):
     Input_nogo[:,int(T_pre/dt):int((T_pre+T_sti)/dt)] = Sti_nogo.T
 
     # Simulation
-    Out_go, V_go, g_go, spk_go = LRSNN.simulate(dt,Input_go)
-    Out_nogo, V_nogo, g_nogo, spk_nogo = LRSNN.simulate(dt,Input_nogo)
+    Out_go, V_go, g_go, spk_go = LRSNN.simulate(dt,Input_go*IS)
+    Out_go = np.dot(np.tanh(g_go.T),W_out)/(LRSNN.N_E+LRSNN.N_I)
+    Out_nogo, V_nogo, g_nogo, spk_nogo = LRSNN.simulate(dt,Input_nogo*IS)
+    Out_nogo = np.dot(np.tanh(g_nogo.T),W_out)/(LRSNN.N_E+LRSNN.N_I)
 
     prop = max(Out_go)/max(Out_nogo)
     print('Performance: ', prop[0])
+
+    # Color data
+    # color_Go = '#1C63A9'
+    # color_Nogo = '#009999'
+    # fig,ax = plt.subplots()
+    # lowrankSNN.Draw_Output(ax,Out_go,'Output_{Go}',dt,Input_go*IS,color_data = color_Go)
+    # lowrankSNN.Draw_Output(ax,Out_nogo,'Output_{Nogo}',dt,Input_nogo*IS,color_data=color_Nogo)
+    # # Monitor the Average Conductance
+    # fig, ax = plt.subplots()
+    # lowrankSNN.Draw_Conductance(ax,g_go,color_Go,"Average Conductance_{Go}",dt,Input_go)
+    # lowrankSNN.Draw_Conductance(ax,g_nogo,color_Nogo,"Average Conductance_{Nogo}",dt,Input_nogo)
     return prop[0]
 
 mu_all = range(1,101)

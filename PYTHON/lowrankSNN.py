@@ -190,7 +190,7 @@ class LowRankSNN:
         return Out, V, g, spk
 
 # Function
-def Draw_Output(ax,data,color_data,label_data,dt,input_data):
+def Draw_Output(ax,data,label_data,dt,input_data,color_data='#1C63A9'):
     # tt = np.linspace(0,len(data)-1)*dt
     tt = np.array(range(len(data)))*dt
     ax.plot(tt,data,color = color_data, label = '$'+label_data+'$')
