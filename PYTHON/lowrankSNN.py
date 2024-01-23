@@ -46,7 +46,7 @@ class LowRankSNN:
         zero_w = (self.conn == 0).sum().item()
         # pos_w = (self.conn > 0).sum().item()
         # neg_w = (full_w < 0 ).sum().item()
-        print('Zero Weights occupy: %2.2f %%'%(zero_w/(self.N**2)*100))
+        print('Zero Weights occupy: %2.2f %%'%(zero_w/((self.N_E+self.N_I)**2)*100))
         # print('Positive Weights occupy: %2.2f %%'%(pos_w/(self.N**2)*100))
         # print('Negative Weights occupy: %2.2f %%'%(neg_w/(self.N**2)*100))
 

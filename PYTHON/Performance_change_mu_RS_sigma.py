@@ -1,11 +1,14 @@
 '''
+1/23: 关于RS固定时候的值, 代码上面写的是1, 硕士论文里写的是0.5, 两个都试试吧
+
+1/22: N_E改为1000看有没有什么不同以及原来的结果是不是基于1000的
+
 用于重现精密工学会发表Figure1的图
 改变Gamma分布的mu,random strength和sigma看performance的变化
 N_E = 5000
-
-mu从1到100一步一测 即range(1,101) RS = 0.1, sigma = 10
+mu从1到100一步一测 即range(1,101) RS = 0.1(?), sigma = 10
 random Strength从 0 到 10,步长为0.5, 即range(0,10.5,0.5) mu = 50, sigma = 10
-sigma从1到70 range(71) mu = 50, RS = 0.1
+sigma从1到70 range(71) mu = 50, RS = 0.1(?)
 
 得到的结果存到名为prop_change_mu.csv,prop_change_RS.csv,prop_change_sigma.csv的文件中, 第一行是自变量, 第二行是performance
 
@@ -22,7 +25,8 @@ import matplotlib.pyplot as plt
 
 def test(mu,RandomS,sigma):
     # Initialiazation
-    LRSNN = lowrankSNN.LowRankSNN(N_E=5000,N_I=0,RS=RandomS,taud_E=2,taud_I=5)
+    # LRSNN = lowrankSNN.LowRankSNN(N_E=5000,N_I=0,RS=RandomS,taud_E=2,taud_I=5)
+    LRSNN = lowrankSNN.LowRankSNN(N_E=1000,N_I=0,RS=RandomS,taud_E=2,taud_I=5)
     # LRSNN = lowrankSNN.LowRankSNN(N_E=500,N_I=0,RS=RandomS,taud_E=2,taud_I=5)
     #low rank文献的N=5000
     IS = 3 #Input strength
@@ -116,7 +120,7 @@ perf_sigma = []
 
 # 测试mu
 for mu in mu_all:
-    perf = test(mu,0.1,10)
+    perf = test(mu,0.5,10)
     perf_mu.append(perf)
 
 with open('prop_change_mu.csv','a+',newline='') as f:
@@ -131,7 +135,7 @@ with open('prop_change_RS.csv','a+',newline='') as f:
     csv.writer(f).writerow(perf_RS)
 # 测试sigma
 for sigma in sigma_all:
-    perf = test(50,0.1,sigma)
+    perf = test(50,0.5,sigma)
     perf_sigma.append(perf)
 with open('prop_change_sigma.csv','a+',newline='') as f:
     csv.writer(f).writerow(sigma_all)
