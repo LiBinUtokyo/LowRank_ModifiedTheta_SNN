@@ -1,36 +1,38 @@
 '''
-用于构建lowrankSNN
+用于构建基于Pytorch的lowrankSNN
 
 '''
-import matplotlib.pyplot as plt
+
+import torch
 import numpy as np
-import os
+import torch.nn as nn
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
-import pickle #用于存储SNN对象
 
 
-class LowRankSNN:
+class LowRankSNN(nn.Module):
     # CONSTANTS
-    G_L_E = 0.08
-    G_L_I = 0.1
-    G_P= [0.004069, 0.02672, 0.003276, 0.02138] #g_peak:[E←E, E←I, I←E, I←I]
-    V_T = -55
-    V_R = -62
-    REV_E = 0
-    REV_I = -70
+    G_L_E = torch.tensor(0.08)
+    G_L_I = torch.tensor(0.1)
+    G_P= torch.tensor([0.004069, 0.02672, 0.003276, 0.02138]) #g_peak:[E←E, E←I, I←E, I←I]
+    V_T = torch.tensor(-55)
+    V_R = torch.tensor(-62)
+    REV_E = torch.tensor(0)
+    REV_I = torch.tensor(-70)
     BIAS = V_T - V_R #Bias current
     C0 = 2/(V_T-V_R)
     C1 = (2*REV_E-V_R-V_T)/(V_T-V_R)
     C2 = (2*REV_I-V_R-V_T)/(V_T-V_R)
 
     def __init__(self,N_E=1000,N_I=200,RS= 1,taud_E=2,taud_I=5) -> None:
-        self.N_E = N_E
-        self.N_I = N_I
-        self.RS = RS
-        self.taud_E = taud_E
-        self.taud_I = taud_I
-        self.conn = np.zeros((N_E+N_I,N_E+N_I))
+        super().__init__() #调用了父类的方法
+        self.N_E = torch.tensor(N_E)
+        self.N_I = torch.tensor(N_I)
+        self.RS = torch.tensor(RS)
+        self.taud_E = torch.tensor(taud_E)
+        self.taud_I = torch.tensor(taud_I)
+        # self.conn = np.zeros((N_E+N_I,N_E+N_I))
+        self.conn = torch.zeros(N_E+N_I,N_E+N_I)
         self.added_lowrank = False
         self.added_random = False
         
@@ -51,7 +53,7 @@ class LowRankSNN:
         # print('Negative Weights occupy: %2.2f %%'%(neg_w/(self.N**2)*100))
 
     def show_conn(self, maxvalue = 0.001):
-        full_w = self.conn.copy() #包含兴奋和抑制性信息的连接矩阵
+        full_w = self.conn.cpu().clone().detach().numpy() #包含兴奋和抑制性信息的连接矩阵
         # let the weight from Inhibitory be negative value
         full_w[:,self.N_E:self.N_E+self.N_I] = -full_w[:,self.N_E:self.N_E+self.N_I]
         colors = [(0, 0, 1), (1, 1, 1), (1, 0, 0)]  # 蓝 -> 白 -> 红
@@ -107,41 +109,68 @@ class LowRankSNN:
     def V2theta(self,V):
         V_R = LowRankSNN.V_R
         V_T = LowRankSNN.V_T
-        return 2*np.arctan((V-(V_R+V_T)/2)*2/(V_T-V_R))
+        return 2*torch.arctan((V-(V_R+V_T)/2)*2/(V_T-V_R))
 
     def theta2V(self,theta):
         V_R = LowRankSNN.V_R
         V_T = LowRankSNN.V_T
-        return (V_T+V_R)/2+(V_T-V_R)/2*np.tan(theta/2)
+        return (V_T+V_R)/2+(V_T-V_R)/2*torch.tan(theta/2)
+    
+    def to(self, device):
+        super().to(device)
+        #将有必要的属性转为tensor并移动到指定的device
+        self.G_P = self.G_P.to(device)
+        self.G_L_E = self.G_L_E.to(device)
+        self.G_L_I = self.G_L_I.to(device)
+        self.C0 = self.C0.to(device)
+        self.C1 = self.C1.to(device)
+        self.C2 = self.C2.to(device)
+        self.conn = self.conn.to(device)
+        self.N_E = self.N_E.to(device)
+        self.N_I = self.N_I.to(device)
+        self.taud_E = self.taud_E.to(device)
+        self.taud_I = self.taud_I.to(device)
+        self.W_out = self.W_out.to(device)
 
-    def simulate(self,dt,Input):
+        return self
+    
+    def forward(self,dt,Input):
+        # Input size:(N，time)
 
         if self.conn_lowrank.shape == self.conn_random.shape:
             print('Low-rank connectivity is added to all the connections')
-
-        G_P = LowRankSNN.G_P
-        G_L_E = LowRankSNN.G_L_E
-        G_L_I = LowRankSNN.G_L_I
-        C0 = LowRankSNN.C0
-        C1 = LowRankSNN.C1
-        C2 = LowRankSNN.C2
+        dt = torch.tensor(dt).to(Input.device)
+        G_P = self.G_P
+        G_L_E = self.G_L_E
+        G_L_I = self.G_L_I
+        C0 = self.C0
+        C1 = self.C1
+        C2 = self.C2
         conn_EE = self.conn[:self.N_E,:self.N_E]
         conn_IE = self.conn[self.N_E:self.N_E+self.N_I,:self.N_E]
         conn_EI = self.conn[:self.N_E,self.N_E:self.N_E+self.N_I]
         conn_II = self.conn[self.N_E:self.N_E+self.N_I,self.N_E:self.N_E+self.N_I]
-        V = np.zeros_like(Input)
-        phase = np.zeros_like(Input)
-        g = np.zeros_like(Input)
-        g_EE = np.delete(np.zeros_like(Input),range(self.N_I),axis=0)
-        g_IE = np.delete(np.zeros_like(Input),range(self.N_E),axis=0)
-        g_EI = np.delete(np.zeros_like(Input),range(self.N_I),axis=0)
-        g_II = np.delete(np.zeros_like(Input),range(self.N_E),axis=0)
-        spk = np.zeros_like(Input)
+        V = torch.zeros_like(Input).to(Input.device)
+        phase = torch.zeros_like(Input).to(Input.device)
+        g = torch.zeros_like(Input).to(Input.device)
+        # g_EE = np.delete(np.zeros_like(Input),range(self.N_I),axis=0)
+        # g_IE = np.delete(np.zeros_like(Input),range(self.N_E),axis=0)
+        # g_EI = np.delete(np.zeros_like(Input),range(self.N_I),axis=0)
+        # g_II = np.delete(np.zeros_like(Input),range(self.N_E),axis=0)
+
+        g_EE = g[:self.N_E,:].clone().to(Input.device)
+        g_IE = g[:self.N_I,:].clone().to(Input.device)
+        g_EI = g[:self.N_E,:].clone().to(Input.device)
+        g_II = g[:self.N_I,:].clone().to(Input.device)
+
+
+        spk = torch.zeros_like(Input).to(Input.device)
 
         for step, inputs in enumerate(Input.T): #for every time step
             if step == 0: continue
 
             # Calculate Synaptic Conductance (Single Exponential filter)
+            # print(g_EE.device,self.taud_E.device,G_P[0].device,conn_EE.device,spk.device,dt.device)
             g_EE[:,step] = g_EE[:,step-1] + \
                 (-g_EE[:,step-1]/self.taud_E+ \
                 G_P[0]*conn_EE@spk[:self.N_E,step-1])*dt
@@ -166,26 +195,29 @@ class LowRankSNN:
                 G_P[2]*conn_IE@spk[:self.N_E,step-1]+ \
                 G_P[3]*conn_II@spk[self.N_E:self.N_E+self.N_I,step-1])*dt
 
-            if np.any(g<0):
+            if torch.any(g<0):
                 print('got it')
 
             # Calculate Membrane Voltage (Phase)
             # For Excitatory Neurons
             phase_pre_E = phase[:self.N_E,step-1]
-            phase[:self.N_E,step] = phase_pre_E + (-G_L_E*np.cos(phase_pre_E)+C0*(1+np.cos(phase_pre_E))*inputs[:self.N_E]+g_EE[:,step]*(C1*(1+np.cos(phase_pre_E))-\
-                np.sin(phase_pre_E))+g_EI[:,step]*(C2*(1+np.cos(phase_pre_E))-np.sin(phase_pre_E)))*dt
+            phase[:self.N_E,step] = phase_pre_E + (-G_L_E*torch.cos(phase_pre_E)+C0*(1+torch.cos(phase_pre_E))*inputs[:self.N_E]+g_EE[:,step]*(C1*(1+torch.cos(phase_pre_E))-\
+                torch.sin(phase_pre_E))+g_EI[:,step]*(C2*(1+torch.cos(phase_pre_E))-torch.sin(phase_pre_E)))*dt
             # For Inhibitory Neurons
             phase_pre_I = phase[self.N_E:self.N_E+self.N_I,step-1]
-            phase[self.N_E:self.N_E+self.N_I,step] = phase_pre_I + (-G_L_I*np.cos(phase_pre_I)+C0*(1+np.cos(phase_pre_I))*inputs[self.N_E:self.N_E+self.N_I]+g_IE[:,step]*(C1*(1+np.cos(phase_pre_I))-\
-                np.sin(phase_pre_I))+g_II[:,step]*(C2*(1+np.cos(phase_pre_I))-np.sin(phase_pre_I)))*dt
+            phase[self.N_E:self.N_E+self.N_I,step] = phase_pre_I + (-G_L_I*torch.cos(phase_pre_I)+C0*(1+torch.cos(phase_pre_I))*inputs[self.N_E:self.N_E+self.N_I]+g_IE[:,step]*(C1*(1+torch.cos(phase_pre_I))-\
+                torch.sin(phase_pre_I))+g_II[:,step]*(C2*(1+torch.cos(phase_pre_I))-torch.sin(phase_pre_I)))*dt
 
             # Store the firing time
-            spk[:,step] = (phase[:,step] >= np.pi).astype(int)
-            phase[:,step][phase[:,step] >= np.pi] -= 2*np.pi
+            spk[:,step] = (phase[:,step] >= torch.pi).int()
+            phase[:,step][phase[:,step] >= torch.pi] -= 2*np.pi
             
 
         if self.conn_lowrank.shape == self.conn_random.shape:
-            Out = np.dot(g.T,self.W_out)/(self.N_E+self.N_I) #Size of g:(N,time), Size of W_out: (N,1)
+            # print(g.T.dtype,self.W_out.dtype,self.N_E.dtype,self.N_I.dtype)
+            # print(type(torch.mm(g.T,self.W_out)))
+            # print(type(torch.mm(g.T,self.W_out)),type((self.N_E+self.N_I)))
+            Out = torch.mm(g.T,self.W_out)/(self.N_E+self.N_I) #Size of g:(N,time), Size of W_out: (N,1)
         V = self.theta2V(phase)
         return Out, V, g, spk
 
@@ -286,22 +318,3 @@ def Draw_Voltage(ax,data,color_data,label_data,dt,input_data):
     ax.fill_between([start_sti,end_sti],-100,100,alpha = 0.1)
     ax.legend(loc = 1, prop={'size':10})
     # ax.legend()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
