@@ -1,43 +1,38 @@
 '''
-2/26: 为了复现原来的结果，改了几个地方：连接矩阵在最后限制了所有大于一的值为一，随机矩阵的标准差变为根号下。然后IS=3，RS=1
-改掉了Gamma分布的bug
+3/5 测试mu = 50时对RS和sigma的依赖情况
 
-2/16: 改为使用pytorch的代码,并测试5000个神经元时的RS为1和0.5的情况
-
-1/23: 关于RS固定时候的值, 代码上面写的是1, 硕士论文里写的是0.5, 两个都试试吧
-
-1/22: N_E改为1000看有没有什么不同以及原来的结果是不是基于1000的
-
-用于重现精密工学会发表Figure1的图
+3/1 9:15开始跑
+用于精密工学会发表Figure1的图
 改变Gamma分布的mu,random strength和sigma看performance的变化
 N_E = 5000
-mu从1到100一步一测 即range(1,101) RS = 0.1(?), sigma = 10
-random Strength从 0 到 10,步长为0.5, 即range(0,10.5,0.5) mu = 50, sigma = 10
-sigma从1到70 range(71) mu = 50, RS = 0.1(?)
+mu从1到100一步一测 即range(1,101) RS = 1, sigma = 10
+random Strength从 0 到 10,步长为0.1, 即range(0,10.1,0.1) mu = 1, sigma = 10
+sigma从1到70 range(71) mu = 1, RS = 1
+随机连接用Gamma分布，均值取1/N，标准差取100/N，这是为了和mu为1，标准差为10的Sti_go组成的lowrank连接矩阵接近），这样也许可以解释mu接近0时由于接近random所以表现变好
+取消了输出时候的激活函数
+得到的结果存到名为日期+prop_change_mu.csv,prop_change_RS.csv,prop_change_sigma.csv的文件中, 第一行是自变量, 第二行是performance
 
-得到的结果存到名为prop_change_mu.csv,prop_change_RS.csv,prop_change_sigma.csv的文件中, 第一行是自变量, 第二行是performance
-
-先保证一次测试的结果和Matlab代码基本一致再开始大规模测试
 '''
 import lowrankSNN_GPU as lowrankSNN
 # import lowrankSNN
 import numpy as np
 import csv
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 import torch
 import torch.distributions as dist
-
+from datetime import datetime
+import os
 
 # path = '/SanDisk/Li/LowRank_ModifiedTheta_SNN/PYTHON/change_mu_RS_sigma_N_5000_RS_0.5/'
 # path = '/SanDisk/Li/LowRank_ModifiedTheta_SNN/PYTHON/change_mu_RS_sigma_N_5000_RS_1/'
 # path = '/SanDisk/Li/LowRank_ModifiedTheta_SNN/PYTHON/change_mu_RS_sigma_N_1000_RS_1_GPU/'
 # path = '/SanDisk/Li/LowRank_ModifiedTheta_SNN/PYTHON/change_mu_RS_sigma_N_1000_RS_0.5_GPU/'
 # path = '/SanDisk/Li/LowRank_ModifiedTheta_SNN/PYTHON/change_mu_RS_sigma_N_1000_RS_1/'
-path = '/SanDisk/Li/LowRank_ModifiedTheta_SNN/PYTHON/change_mu_RS_sigma_N_1000_RS_0.5/'
+# path = '/SanDisk/Li/LowRank_ModifiedTheta_SNN/PYTHON/change_mu_RS_sigma/'
 def test(mu,RandomS,sigma):
     # Initialiazation
-    # LRSNN = lowrankSNN.LowRankSNN(N_E=5000,N_I=0,RS=RandomS,taud_E=2,taud_I=5)
-    LRSNN = lowrankSNN.LowRankSNN(N_E=1000,N_I=0,RS=RandomS,taud_E=2,taud_I=5)
+    LRSNN = lowrankSNN.LowRankSNN(N_E=5000,N_I=0,RS=RandomS,taud_E=2,taud_I=5)
+    # LRSNN = lowrankSNN.LowRankSNN(N_E=1000,N_I=0,RS=RandomS,taud_E=2,taud_I=5)
     # LRSNN = lowrankSNN.LowRankSNN(N_E=500,N_I=0,RS=RandomS,taud_E=2,taud_I=5)
     #low rank文献的N=5000
     IS = 3 #Input strength
@@ -78,10 +73,16 @@ def test(mu,RandomS,sigma):
     W_out = np.transpose(W_out) #Size (N_E,1)
     # Low Rank Connectivity (Rank = 1)
     conn_LR = W_out*Sti_go/(LRSNN.N_E+LRSNN.N_I) # 为什么除以神经元总数?
+
+    mu_rand = 1/(LRSNN.N_E+LRSNN.N_I)
+    si_rand = 100/(LRSNN.N_E+LRSNN.N_I)
+    b_rand = mu_rand/si_rand**2
+    a_rand = mu_rand*b_rand
+    gamma_dist_rand = dist.gamma.Gamma(a_rand, b_rand)
     # Random Connectivity
-    # conn_rand = gamma_dist.sample(((LRSNN.N_E+LRSNN.N_I,LRSNN.N_E+LRSNN.N_I))) #这里的Gamma分布取值也需要讨论
-    conn_rand = np.abs(np.random.normal(0,np.sqrt(1/(LRSNN.N_E+LRSNN.N_I)),(LRSNN.N_E+LRSNN.N_I,LRSNN.N_E+LRSNN.N_I))) #改回和原来一样的形式
-    conn_rand = torch.from_numpy(conn_rand)
+    conn_rand = gamma_dist_rand.sample(((LRSNN.N_E+LRSNN.N_I,LRSNN.N_E+LRSNN.N_I))) #这里的Gamma分布取值也需要讨论
+    # conn_rand = np.abs(np.random.normal(0,np.sqrt(1/(LRSNN.N_E+LRSNN.N_I)),(LRSNN.N_E+LRSNN.N_I,LRSNN.N_E+LRSNN.N_I))) #改回和原来一样的形式
+    # conn_rand = torch.from_numpy(conn_rand)
     # # Use Gamma Distribution to generate Stimuli and Readout Vector
     # # mean and std of Gamma Distribution(Deside Sti_go,Sti_nogo,W_out,conn_rand)
     # # mu = 1
@@ -163,8 +164,8 @@ def test(mu,RandomS,sigma):
     spk_go = spk_go.cpu().numpy()
     spk_nogo = spk_nogo.cpu().numpy()
 
-    Out_go = np.dot(np.tanh(g_go.T),W_out)/(LRSNN.N_E.cpu().numpy()+LRSNN.N_I.cpu().numpy())
-    Out_nogo = np.dot(np.tanh(g_nogo.T),W_out)/(LRSNN.N_E.cpu().numpy()+LRSNN.N_I.cpu().numpy())
+    # Out_go = np.dot(np.tanh(g_go.T),W_out)/(LRSNN.N_E.cpu().numpy()+LRSNN.N_I.cpu().numpy())
+    # Out_nogo = np.dot(np.tanh(g_nogo.T),W_out)/(LRSNN.N_E.cpu().numpy()+LRSNN.N_I.cpu().numpy())
 
     prop = max(Out_go)/max(Out_nogo)
     print('Performance: ', prop[0])
@@ -182,7 +183,7 @@ def test(mu,RandomS,sigma):
     return prop[0]
 
 mu_all = range(1,101)
-RandomS_all = range(11)
+RandomS_all = range(101)
 sigma_all = range(1,71)
 
 perf_mu = []
@@ -190,36 +191,42 @@ perf_RS = []
 perf_sigma = []
 
 # 测试mu
-for mu in mu_all:
-    perf = test(mu,0.5,10)
-    perf_mu.append(perf)
+# for mu in mu_all:
+#     perf = test(mu,1,10)
+#     perf_mu.append(perf)
+
+# 测试RS
+for RandomS in RandomS_all:
+    perf = test(50,RandomS/10,10)
+    perf_RS.append(perf)
+
+# 测试sigma
+for sigma in sigma_all:
+    perf = test(50,1,sigma)
+    perf_sigma.append(perf)
+
+now = datetime.now()
+formatted_now = now.strftime("%Y_%m_%d_%H_%M_")
+path = f'/SanDisk/Li/LowRank_ModifiedTheta_SNN/PYTHON/{formatted_now}change_mu_RS_sigma/'
+os.makedirs(path, exist_ok=True)
+# torch.save({
+#     'model':LRSNN,
+#     'Input_go':Input_go,
+#     'Input_nogo':Input_nogo,
+#     'dt':dt
+# },f'/SanDisk/Li/LowRank_ModifiedTheta_SNN/PYTHON/models/{formatted_now}.pth')
 
 with open(path+'prop_change_mu.csv','a+',newline='') as f:
     csv.writer(f).writerow(mu_all)
     csv.writer(f).writerow(perf_mu)
-# 测试RS
-for RandomS in RandomS_all:
-    perf = test(50,RandomS,10)
-    perf_RS.append(perf)
+
 with open(path+'prop_change_RS.csv','a+',newline='') as f:
     csv.writer(f).writerow(RandomS_all)
     csv.writer(f).writerow(perf_RS)
-# 测试sigma
-for sigma in sigma_all:
-    perf = test(50,0.5,sigma)
-    perf_sigma.append(perf)
+
 with open(path+'prop_change_sigma.csv','a+',newline='') as f:
     csv.writer(f).writerow(sigma_all)
     csv.writer(f).writerow(perf_sigma)
-
-
-
-
-
-
-
-
-
 
 
 
