@@ -3,6 +3,7 @@ import torch
 from datetime import datetime
 import numpy as np
 
+# Functions
 def Draw_Output(ax,data,label_data,dt,input_data,color_data='#1C63A9'):
     # tt = np.linspace(0,len(data)-1)*dt
     tt = np.array(range(len(data)))*dt
@@ -12,7 +13,7 @@ def Draw_Output(ax,data,label_data,dt,input_data,color_data='#1C63A9'):
     ax.set_ylabel('Read Out')
 
     ax.set_xlim([0, tt[-1]])
-    ax.set_ylim([0, np.max([0.00001,np.max(data),ax.get_ylim()[1]])])
+    ax.set_ylim([0, np.max([0.0000001,np.max(data),ax.get_ylim()[1]])])
 
     non_zero_columns = np.any(input_data!=0, axis=0)
     non_zero_columns = np.where(non_zero_columns)[0]
@@ -21,7 +22,7 @@ def Draw_Output(ax,data,label_data,dt,input_data,color_data='#1C63A9'):
     ax.fill_between([start_sti,end_sti],-2,1,alpha = 0.1)
     ax.legend(loc = 1, prop={'size':10})
 
-def Draw_Conductance(ax,data,color_data,label_data,dt,input_data):
+def Draw_Conductance(ax,data,color_data,label_data,dt,input_data,ylim=None):
     tt = np.array(range(len(data[0])))*dt
     if type(label_data) == list:
         for i in range(len(data)):
@@ -33,34 +34,37 @@ def Draw_Conductance(ax,data,color_data,label_data,dt,input_data):
     ax.set_ylabel('Synaptic Conductance (mS/cm^2)')
 
     ax.set_xlim([0, tt[-1]])
-    ax.set_ylim([0, np.max([0.000001,np.max(data),ax.get_ylim()[1]])])
-
+    if np.max(data) == 0: 
+        print('g is all zero')
+        return
+    # ax.set_ylim([0, np.max([0.00000001,np.max(data),ax.get_ylim()[1]])])
+    if ylim:
+        ax.set_ylim(ylim)
+    else:
+        ax.set_ylim([0,np.max(data)*1.1])
+    print(np.max(data),ax.get_ylim()[1])
     non_zero_columns = np.any(input_data!=0, axis=0)
     non_zero_columns = np.where(non_zero_columns)[0]
     start_sti = non_zero_columns[0]*dt
     end_sti = non_zero_columns[-1]*dt
+    # ax.fill_between([start_sti,end_sti],0,ax.get_ylim()[1],alpha = 0.1)
     ax.fill_between([start_sti,end_sti],-2,1,alpha = 0.1)
     ax.legend(loc = 1, prop={'size':10})
 
 
-def Draw_RasterPlot(ax,data,title_name,dt,input_data,N_E,N_I):
-    tt = np.array(range(len(data[0])))*dt
-    #Exc
-    for row in range(data.shape[0]-N_I):
-        spike_times = np.where(data[row]==1)[0]
-        # ax.scatter(spike_times*dt, np.ones_like(spike_times) * row, marker='|',color = 'red')
-        ax.scatter(spike_times*dt, np.ones_like(spike_times) * row, color = 'red',s=5)
+def Draw_RasterPlot(ax, spk_step, spk_ind, title_name, dt, input_data, N_E, N_I):
 
-    #Inh
-    for row in range(N_E,data.shape[0]):
-        spike_times = np.where(data[row]==1)[0]
-        # ax.scatter(spike_times*dt, np.ones_like(spike_times) * row, marker='|',color = 'blue')
-        ax.scatter(spike_times*dt, np.ones_like(spike_times) * row, color = 'blue',s=5)
-
+    # ax.scatter(spk_step, spk_ind, color = 'red',s=5)
+    # change the color of the Inhibitory neurons
+    for i in range(len(spk_step)):
+        if spk_ind[i] >= N_E:
+            ax.scatter(spk_step[i]*dt, spk_ind[i], color = 'blue',s=5)
+        else:
+            ax.scatter(spk_step[i]*dt, spk_ind[i], color = 'red',s=5)
     ax.set_xlabel('time (ms)')
     ax.set_ylabel('Neuron Index')
 
-    ax.set_xlim([0, tt[-1]])
+    ax.set_xlim([0, len(input_data[0])*dt])
     ax.set_ylim([-1, N_E+N_I])
 
     non_zero_columns = np.any(input_data!=0, axis=0)
@@ -99,6 +103,21 @@ def Draw_Voltage(ax,data,color_data,label_data,dt,input_data):
     ax.fill_between([start_sti,end_sti],-100,100,alpha = 0.1)
     ax.legend(loc = 1, prop={'size':10})
     # ax.legend()
+
+def Draw_Projection(ax,activity,direction1,direction2,title_name='Projection',color_line = '#1C63A9',xlabel = 'Activity along Direction1',ylabel = 'Activity along Direction2',ylim = None,xlim=None):
+    # Calculate teh projection （using @ to calculate inner multiply）
+    # activity: numpy ndarray(N,T), direction1,2: numpy ndarray(N,1)
+    act_on_dir1 = activity.T@direction1 # size(T,1)
+    act_on_dir2 = activity.T@direction2
+    # Draw the graph
+    ax.plot(act_on_dir1,act_on_dir2,color = color_line)
+    ax.set_title(title_name)
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
+    if ylim:
+        ax.set_ylim(ylim)
+    if xlim:
+        ax.set_xlim(xlim)
 
 def save_model(LRSNN,dt,Sti_go,Sti_nogo,Input_go,Input_nogo,IS,m,n,path='/SanDisk/Li/LowRank_ModifiedTheta_SNN/PYTHON/models/'):
     now = datetime.now()
