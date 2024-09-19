@@ -2,6 +2,7 @@
 import torch
 from datetime import datetime
 import numpy as np
+import yaml
 
 # Functions
 def Draw_Output(ax,data,label_data,dt,input_data,color_data='#1C63A9'):
@@ -133,3 +134,8 @@ def save_model(LRSNN,dt,Sti_go,Sti_nogo,Input_go,Input_nogo,IS,m,n,path='/SanDis
         'm':m,
         'n':n,
     },f'{path}{formatted_now}.pth')
+
+def load_config_yaml(config_file):
+    with open(config_file, 'r') as f:
+        config = yaml.safe_load(f)
+    return config

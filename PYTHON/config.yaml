@@ -1,0 +1,26 @@
+network_params:
+  N_AN: 400
+  N_VN: 200
+  P_inh: 0.2
+  P_rec: 0.2
+  act: sigmoid
+  decay_taus:
+  - 0
+  - 21
+  gain: 1.5
+task_params:
+  DeltaT: 1
+  T: 200
+  stim_dur: 25
+  stim_on: 50
+  task: go_nogo
+training_params:
+  batch_size: 1
+  eval_amp_threshold: 0.7
+  eval_freq: 100
+  eval_tr: 100
+  learning_rate: 0.01
+  loss_fn: l2
+  loss_threshold: 7
+  n_trials: 6000
+  num_epochs: 1
