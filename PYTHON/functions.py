@@ -57,11 +57,24 @@ def Draw_RasterPlot(ax, spk_step, spk_ind, title_name, dt, input_data, N_E, N_I)
 
     # ax.scatter(spk_step, spk_ind, color = 'red',s=5)
     # change the color of the Inhibitory neurons
-    for i in range(len(spk_step)):
-        if spk_ind[i] >= N_E:
-            ax.scatter(spk_step[i]*dt, spk_ind[i], color = 'blue',s=5)
-        else:
-            ax.scatter(spk_step[i]*dt, spk_ind[i], color = 'red',s=5)
+    # for i in range(len(spk_step)):
+    #     if spk_ind[i] >= N_E:
+    #         ax.scatter(spk_step[i]*dt, spk_ind[i], color = 'blue',s=5)
+    #         print(i)
+    #     else:
+    #         ax.scatter(spk_step[i]*dt, spk_ind[i], color = 'red',s=5)
+    #         print(i)
+    # 预先计算需要绘制的点和颜色
+    x_values = np.array(spk_step) * dt
+    colors = ['blue' if ind >= N_E else 'red' for ind in spk_ind]
+
+    # 一次性绘制所有点
+    ax.scatter(x_values, spk_ind, c=colors, s=3)
+
+    # # 如果仍然需要打印 i，可以使用一个简单的 for 循环
+    # for i in range(len(spk_step)):
+    #     print(i)
+
     ax.set_xlabel('time (ms)')
     ax.set_ylabel('Neuron Index')
 

@@ -1,3 +1,10 @@
+
+'''
+构建基于Pytorch的lowrankSNN
+
+'''
+
+
 import torch
 import numpy as np
 import torch.nn as nn

@@ -1,6 +1,7 @@
 '''
 用于构建基于Pytorch的lowrankSNN
-
+这个似乎没有在用了 2024.09.25
+现在在用lowranksnn.py
 '''
 
 import torch
