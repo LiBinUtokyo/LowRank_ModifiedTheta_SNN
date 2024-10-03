@@ -1,7 +1,14 @@
 # Description: Configuration file for the ING oscillation
 N_E: 800
 N_I: 200
-RandomStrength : 0.5
+P_EE: 0.1
+P_EI: 0.1
+P_IE: 0.1
+P_II: 0.1
+RandomStrength : 1
+factor_mn: 1000
+# taud_E: 2
+# taud_I: 5
 taud_E: 2
 taud_I: 5
 mu: 1
@@ -9,9 +16,9 @@ sigma: 10
 mu_rand: 0.0002  # 1/(N_E+N_I)
 sigma_rand: 0.02   # 100/(N_E+N_I)
 dt: 1 #(ms/step)
-T_pre: 0 # length of time before sti (ms)
+T_pre: 500 # length of time before sti (ms)
 T_sti: 1000 # length of time for sti (ms)
-T_after: 0 # length of time after sti (ms)
+T_after: 500 # length of time after sti (ms)
 InputStrength: 3 #Input Strength (maybe chage to norm in the future)
 norm_input: 0.1 # Normalization of input
 color_Go: '#1C63A9'
