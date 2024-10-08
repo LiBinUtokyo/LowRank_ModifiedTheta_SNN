@@ -69,7 +69,7 @@ def Draw_RasterPlot(ax, spk_step, spk_ind, title_name, dt, input_data, N_E, N_I)
     colors = ['blue' if ind >= N_E else 'red' for ind in spk_ind]
 
     # 一次性绘制所有点
-    ax.scatter(x_values, spk_ind, c=colors, s=3)
+    ax.scatter(x_values, spk_ind, c=colors, s=1)
 
     # # 如果仍然需要打印 i，可以使用一个简单的 for 循环
     # for i in range(len(spk_step)):
