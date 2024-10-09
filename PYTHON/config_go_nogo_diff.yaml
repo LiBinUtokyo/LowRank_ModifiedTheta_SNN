@@ -25,7 +25,7 @@ dt: 1 #(ms/step)
 T_pre: 0 # length of time before sti (ms)
 T_sti: 500 # length of time for sti (ms)
 T_after: 500 # length of time after sti (ms)
-InputStrength: 1 #Input Strength (maybe chage to norm in the future)
+InputStrength: 6 #Input Strength (maybe chage to norm in the future)
 norm_input: 1 # Normalization of input
 color_Go: '#1C63A9'
 color_Nogo: '#009999'
