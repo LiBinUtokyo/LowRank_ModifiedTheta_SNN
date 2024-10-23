@@ -1,5 +1,5 @@
 # Description: Configuration file for test
-# 
+# for gammadistribution
 N_E: 800
 N_I: 200
 P_EE: 0.1
