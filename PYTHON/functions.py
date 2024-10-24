@@ -40,7 +40,7 @@ def Draw_Conductance(ax,data,color_data,label_data,dt,input_data,ylim=None,title
             return
 
     ax.set_xlabel('time (ms)')
-    ax.set_ylabel('Synaptic Conductance (mS/cm^2)')
+    ax.set_ylabel('g (mS/cm^2)')
 
     ax.set_xlim([0, tt[-1]])
 
