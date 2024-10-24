@@ -1,7 +1,7 @@
 
 '''
 构建基于Pytorch的lowrankSNN
-
+10/23: 把g的位置的输出改为了[g, g_EE,g_IE,g_EI,g_II]
 '''
 
 
@@ -230,5 +230,5 @@ class LowRankSNN(nn.Module):
             # print(type(torch.mm(g.T,self.W_out)),type((self.N_E+self.N_I)))
             Out = torch.mm(g.T,self.W_out)/(self.N_E+self.N_I) #Size of g:(N,time), Size of W_out: (N,1)
         V = self.theta2V(phase)
-        return Out, V, g, spk_step, spk_ind
+        return Out, V, [g,g_EE,g_EI,g_IE,g_II], spk_step, spk_ind
 

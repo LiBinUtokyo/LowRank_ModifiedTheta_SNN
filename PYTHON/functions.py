@@ -3,6 +3,7 @@ import torch
 from datetime import datetime
 import numpy as np
 import yaml
+import matplotlib.pyplot as plt
 
 # Functions
 def Draw_Output(ax,data,label_data,dt,input_data,color_data='#1C63A9'):
@@ -23,27 +24,32 @@ def Draw_Output(ax,data,label_data,dt,input_data,color_data='#1C63A9'):
     ax.fill_between([start_sti,end_sti],-2,1,alpha = 0.1)
     ax.legend(loc = 1, prop={'size':10})
 
-def Draw_Conductance(ax,data,color_data,label_data,dt,input_data,ylim=None):
-    tt = np.array(range(len(data[0])))*dt
+def Draw_Conductance(ax,data,color_data,label_data,dt,input_data,ylim=None,title=None):
     if type(label_data) == list:
+        tt = np.array(range(len(data[0][0])))*dt
         for i in range(len(data)):
-            ax.plot(tt,data[i],color = color_data, label = '$'+label_data+'$')
+            ax.plot(tt,np.mean(data[i],axis=0),color = color_data[i], label = '$'+label_data[i]+'$')
+        if np.max(data[0]) == 0: 
+            print('g is all zero')
+            return
     else:
+        tt = np.array(range(len(data[0])))*dt
         ax.plot(tt,np.mean(data,axis=0),color = color_data, label = '$'+label_data+'$')
+        if np.max(data) == 0: 
+            print('g is all zero')
+            return
 
     ax.set_xlabel('time (ms)')
     ax.set_ylabel('Synaptic Conductance (mS/cm^2)')
 
     ax.set_xlim([0, tt[-1]])
-    if np.max(data) == 0: 
-        print('g is all zero')
-        return
+
     # ax.set_ylim([0, np.max([0.00000001,np.max(data),ax.get_ylim()[1]])])
     if ylim:
         ax.set_ylim(ylim)
     else:
         ax.set_ylim([0,np.max(data)*1.1])
-    print(np.max(data),ax.get_ylim()[1])
+    # print(np.max(data),ax.get_ylim()[1])
     non_zero_columns = np.any(input_data!=0, axis=0)
     non_zero_columns = np.where(non_zero_columns)[0]
     start_sti = non_zero_columns[0]*dt
@@ -51,6 +57,8 @@ def Draw_Conductance(ax,data,color_data,label_data,dt,input_data,ylim=None):
     # ax.fill_between([start_sti,end_sti],0,ax.get_ylim()[1],alpha = 0.1)
     ax.fill_between([start_sti,end_sti],-2,1,alpha = 0.1)
     ax.legend(loc = 1, prop={'size':10})
+    if title:
+        ax.set_title(title)
 
 
 def Draw_RasterPlot(ax, spk_step, spk_ind, title_name, dt, input_data, N_E, N_I):
