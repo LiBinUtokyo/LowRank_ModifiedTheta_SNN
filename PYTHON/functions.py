@@ -140,6 +140,13 @@ def Draw_Projection(ax,activity,direction1,direction2,title_name='Projection',co
         ax.set_ylim(ylim)
     if xlim:
         ax.set_xlim(xlim)
+    #return the ylim and xlim
+    return ax.get_ylim(),ax.get_xlim()
+
+
+
+
+
 
 def save_model(LRSNN,dt,Sti_go,Sti_nogo,Input_go,Input_nogo,IS,m,n,path='/SanDisk/Li/LowRank_ModifiedTheta_SNN/PYTHON/models/'):
     now = datetime.now()
