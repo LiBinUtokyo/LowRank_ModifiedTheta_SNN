@@ -1,6 +1,6 @@
 '''
 用于构建lowrankSNN
-
+不使用pytorch
 '''
 import matplotlib.pyplot as plt
 import numpy as np
