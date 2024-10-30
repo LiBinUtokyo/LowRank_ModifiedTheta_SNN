@@ -1,11 +1,11 @@
-# Description: Configuration file for test
-# 
+# Description: Configuration file for Lowrank SNN with I synapses defined
+# Go-Nogo task
 N_E: 800
 N_I: 200
 P_EE: 0.1
 P_EI: 0.1
-P_IE: 0.05
-P_II: 0.4
+P_IE: 0.1
+P_II: 0.1
 RandomStrength : 1
 factor_mn: 1
 taud_E: 2

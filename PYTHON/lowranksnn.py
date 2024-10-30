@@ -153,16 +153,20 @@ class LowRankSNN(nn.Module):
         conn_II = self.conn[self.N_E:self.N_E+self.N_I,self.N_E:self.N_E+self.N_I]
         V = torch.zeros_like(Input).to(Input.device)
         phase = torch.zeros_like(Input).to(Input.device)
-        g = torch.zeros_like(Input).to(Input.device)
-        # g_EE = np.delete(np.zeros_like(Input),range(self.N_I),axis=0)
-        # g_IE = np.delete(np.zeros_like(Input),range(self.N_E),axis=0)
-        # g_EI = np.delete(np.zeros_like(Input),range(self.N_I),axis=0)
-        # g_II = np.delete(np.zeros_like(Input),range(self.N_E),axis=0)
 
+        # Synaptic Conductance
+        g = torch.zeros_like(Input).to(Input.device)
         g_EE = g[:self.N_E,:].clone().to(Input.device)
         g_IE = g[:self.N_I,:].clone().to(Input.device)
         g_EI = g[:self.N_E,:].clone().to(Input.device)
         g_II = g[:self.N_I,:].clone().to(Input.device)
+
+        # Synaptic Current
+        I_syn = torch.zeros_like(Input).to(Input.device)
+        I_syn_EE = I_syn[:self.N_E,:].clone().to(Input.device)
+        I_syn_IE = I_syn[:self.N_I,:].clone().to(Input.device)
+        I_syn_EI = I_syn[:self.N_E,:].clone().to(Input.device)
+        I_syn_II = I_syn[:self.N_I,:].clone().to(Input.device)
 
 
         spk = torch.zeros_like(Input).to(Input.device)
@@ -198,7 +202,15 @@ class LowRankSNN(nn.Module):
                 (-g[self.N_E:self.N_E+self.N_I,step-1]/self.taud_I+ \
                 G_P[2]*conn_IE@spk[:self.N_E,step-1]+ \
                 G_P[3]*conn_II@spk[self.N_E:self.N_E+self.N_I,step-1])*dt
-
+            
+            # Calculate the Synaptic Current
+            V[:,step-1] = self.theta2V(phase[:,step-1])
+            I_syn_EE[:,step] = -g_EE[:,step]*(V[:self.N_E,step-1]-LowRankSNN.REV_E)
+            I_syn_EI[:,step] = -g_EI[:,step]*(V[:self.N_E,step-1]-LowRankSNN.REV_I)
+            I_syn_IE[:,step] = -g_IE[:,step]*(V[self.N_E:self.N_E+self.N_I,step-1]-LowRankSNN.REV_E)
+            I_syn_II[:,step] = -g_II[:,step]*(V[self.N_E:self.N_E+self.N_I,step-1]-LowRankSNN.REV_I)
+            I_syn[:self.N_E,step] = I_syn_EE[:,step]+I_syn_EI[:,step]
+            I_syn[self.N_E:self.N_E+self.N_I,step] = I_syn_IE[:,step]+I_syn_II[:,step]
             if torch.any(g<0):
                 print('got it')
 
@@ -223,12 +235,13 @@ class LowRankSNN(nn.Module):
 
             phase[:,step][phase[:,step] >= torch.pi] -= 2*np.pi
             
+        # print(g.T.dtype,self.W_out.dtype,self.N_E.dtype,self.N_I.dtype)
+        # print(type(torch.mm(g.T,self.W_out)))
+        # print(type(torch.mm(g.T,self.W_out)),type((self.N_E+self.N_I)))
+        # Out = torch.mm(g.T,self.W_out)/(self.N_E+self.N_I) #Size of g:(N,time), Size of W_out: (N,1)
+        # Out = torch.mm(torch.tanh(I_syn_EE).T,self.W_out[:self.N_E])/(self.N_E+self.N_I)
+        Out = torch.tanh(I_syn_EE).T@self.W_out[:self.N_E] # size(T,1)
 
-        if self.conn_lowrank.shape == self.conn_random.shape:
-            # print(g.T.dtype,self.W_out.dtype,self.N_E.dtype,self.N_I.dtype)
-            # print(type(torch.mm(g.T,self.W_out)))
-            # print(type(torch.mm(g.T,self.W_out)),type((self.N_E+self.N_I)))
-            Out = torch.mm(g.T,self.W_out)/(self.N_E+self.N_I) #Size of g:(N,time), Size of W_out: (N,1)
-        V = self.theta2V(phase)
-        return Out, V, [g,g_EE,g_EI,g_IE,g_II], spk_step, spk_ind
+        V[:,-1] = self.theta2V(phase[:,-1])
+        return Out, V, [g,g_EE,g_EI,g_IE,g_II],[I_syn,I_syn_EE,I_syn_EI,I_syn_IE,I_syn_II], spk_step, spk_ind
 

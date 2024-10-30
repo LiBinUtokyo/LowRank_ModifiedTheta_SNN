@@ -15,7 +15,7 @@ def Draw_Output(ax,data,label_data,dt,input_data,color_data='#1C63A9'):
     ax.set_ylabel('Read Out')
 
     ax.set_xlim([0, tt[-1]])
-    ax.set_ylim([0, np.max([0.0000001,np.max(data),ax.get_ylim()[1]])])
+    ax.set_ylim([np.min([0,np.min(data),ax.get_ylim()[0]]), np.max([0.0000001,np.max(data),ax.get_ylim()[1]])])
 
     non_zero_columns = np.any(input_data!=0, axis=0)
     non_zero_columns = np.where(non_zero_columns)[0]
@@ -142,11 +142,6 @@ def Draw_Projection(ax,activity,direction1,direction2,title_name='Projection',co
         ax.set_xlim(xlim)
     #return the ylim and xlim
     return ax.get_ylim(),ax.get_xlim()
-
-
-
-
-
 
 def save_model(LRSNN,dt,Sti_go,Sti_nogo,Input_go,Input_nogo,IS,m,n,path='/SanDisk/Li/LowRank_ModifiedTheta_SNN/PYTHON/models/'):
     now = datetime.now()
