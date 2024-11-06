@@ -1,5 +1,6 @@
 # Description: Configuration file for reproducing gamma oscillation(ING) only with bias current
 # note: only let bias current drive the network
+# can also achieve go-nogo task if give go and nogo input
 N_E: 800
 N_I: 200
 P_EE: 0.1
@@ -28,10 +29,10 @@ sigma: 0.1
 # mu_rand: 0.1  # 1/(N_E+N_I)
 sigma_rand: 0.1   # 100/(N_E+N_I)
 dt: 1 #(ms/step)
-T_pre: 500 # length of time before sti (ms)
+T_pre: 100 # length of time before sti (ms)
 T_sti: 10 # length of time for sti (ms)
-T_after: 500 # length of time after sti (ms)
-InputStrength: 1 #Input Strength (maybe chage to norm in the future)
+T_after: 100 # length of time after sti (ms)
+InputStrength: 10 #Input Strength (maybe chage to norm in the future)
 # norm_input: 1 # Normalization of input
 color_Go: '#1C63A9'
 color_Nogo: '#009999'

@@ -4,8 +4,9 @@ from datetime import datetime
 import numpy as np
 import yaml
 import matplotlib.pyplot as plt
+import torch.distributions as dist
 
-# Functions
+# Functions for drawing
 def Draw_Output(ax,data,label_data,dt,input_data,color_data='#1C63A9'):
     # tt = np.linspace(0,len(data)-1)*dt
     tt = np.array(range(len(data)))*dt
@@ -143,6 +144,127 @@ def Draw_Projection(ax,activity,direction1,direction2,title_name='Projection',co
     #return the ylim and xlim
     return ax.get_ylim(),ax.get_xlim()
 
+def show_mn(N,N_E, N_I, m,n,Sti_nogo,factor_mn):
+
+    # draw the vectors m, n, Sti_nogo in heatmap
+    plt.figure()
+    plt.imshow(torch.cat((m, n, Sti_nogo), 1), aspect='auto',interpolation='nearest')
+    plt.colorbar()
+    plt.title('Vectors m, n, Sti_nogo')
+    plt.show()
+    print("m norm:", torch.norm(m))
+    print("n norm:", torch.norm(n))
+    print("Sti_nogo norm:", torch.norm(Sti_nogo))
+
+    # W_rank1 = factor_mn*(torch.ger(m.squeeze(), n.squeeze()))
+    # W_rank1 = factor_mn*torch.abs(torch.ger(m.squeeze(), n.squeeze()))
+    W_rank1 = factor_mn*torch.ger(m.squeeze(), n.squeeze())
+    #draw the rank-1 matrix
+    plt.figure()
+    plt.imshow(W_rank1,interpolation='nearest')
+    plt.colorbar()
+    plt.title('Rank-1 matrix')
+    plt.show()
+    # 展示各部分的平均值
+    print("Rank-1 matrix average value_EtoE:", torch.mean(W_rank1[:N_E, :N_E]))
+    print("Rank-1 matrix average value_EtoI:", torch.mean(W_rank1[:N_E, N_E:]))
+    print("Rank-1 matrix average value_ItoE:", torch.mean(W_rank1[N_E:, :N_E]))
+    print("Rank-1 matrix average value_ItoI:", torch.mean(W_rank1[N_E:, N_E:]))
+    return W_rank1
+
+def show_conn(N,N_E, N_I, P_EE, P_EI, P_IE, P_II,W_rank1,RS,W_random=None):
+    if W_random is None:
+        W_random = Generate_RandomMatrix(N_E, N_I, P_EE, P_EI, P_IE, P_II, W_rank1)
+    # rank = np.linalg.matrix_rank(W_random)
+    # print("矩阵的秩:", rank)
+    # print("非零元素的比例:", np.count_nonzero(W_random) / (N * N))
+
+    plt.figure()
+    plt.imshow(W_random,interpolation='nearest')
+    plt.colorbar()
+    plt.title('Full Rank matrix')
+    plt.show()
+    # 展示各部分的平均值
+    print("Full Rank matrix average value_EtoE:", torch.mean(W_random[:N_E, :N_E]))
+    print("Full Rank matrix average value_EtoI:", torch.mean(W_random[:N_E, N_E:]))
+    print("Full Rank matrix average value_ItoE:", torch.mean(W_random[N_E:, :N_E]))
+    print("Full Rank matrix average value_ItoI:", torch.mean(W_random[N_E:, N_E:]))
+
+    W_conn = W_rank1 + RS * W_random
+    W_conn[W_conn > 1] = 1
+    W_conn[W_conn < 0] = 0
+    plt.figure()
+    plt.imshow(W_conn,interpolation='nearest')
+    plt.colorbar()
+    plt.title('Connectivity matrix')
+    plt.show()
+    # 展示各部分的平均值
+    print("Connectivity matrix average value_EtoE:", torch.mean(W_conn[:N_E, :N_E]))
+    print("Connectivity matrix average value_EtoI:", torch.mean(W_conn[:N_E, N_E:]))
+    print("Connectivity matrix average value_ItoE:", torch.mean(W_conn[N_E:, :N_E]))
+    print("Connectivity matrix average value_ItoI:", torch.mean(W_conn[N_E:, N_E:]))
+    return W_conn
+
+
+
+# Functions for generating matrices
+def Generate_Vectors(N, mu=0, sigma=0.1,seed=None):
+    # seed: random seed
+    # m,n,sti_nogo 从 gaussian 分布中采样
+    if seed:
+        m = torch.normal(mu, sigma, (N,1), generator=seed)
+        n = torch.normal(mu, sigma, (N,1), generator=seed)
+        sti_nogo = torch.normal(mu, sigma, (N,1), generator=seed)
+    else:
+        m = torch.normal(mu, sigma, (N,1))
+        n = torch.normal(mu, sigma, (N,1))
+        sti_nogo = torch.normal(mu, sigma, (N,1))
+    return m, n, sti_nogo
+
+def ab_gamma(mu, sigma):
+    # mu: mean of gamma distribution
+    # sigma: standard deviation of gamma distribution
+    # return a, b parameters of gamma distribution
+    # a = mu^2/sigma^2, b = mu/sigma^2
+    a = mu ** 2 / sigma ** 2
+    b = mu / sigma ** 2
+    return a, b
+
+def Generate_RandomMatrix(N_E, N_I, P_EE, P_EI, P_IE, P_II, W_rank1, sigma=0.1):
+    # Construct random weight matrix
+    # use beta distribution to generate random matrix
+    # W_rank1: low rank matrix
+    # deside the average value of the beta distribution according to the rank-1 matrix to make sure
+    # the average value of the sum of the rank-1 matrix and the random matrix is according to the P_EE, P_EI, P_IE, P_II
+    N = N_E + N_I
+    W = torch.zeros(N, N)
+
+    mu_EE = P_EE - torch.sum(W_rank1[:N_E, :N_E]) / (N_E * N_E)
+    mu_EI = P_EI - torch.sum(W_rank1[:N_E, N_E:]) / (N_E * N_I)
+    mu_IE = P_IE - torch.sum(W_rank1[N_E:, :N_E]) / (N_I * N_E)
+    mu_II = P_II - torch.sum(W_rank1[N_E:, N_E:]) / (N_I * N_I)
+
+    # 生成a,b参数
+    # 打印出来看看
+    a_EE, b_EE = ab_gamma(mu_EE, sigma)
+    a_EI, b_EI = ab_gamma(mu_EI, sigma)
+    a_IE, b_IE = ab_gamma(mu_IE, sigma)
+    a_II, b_II = ab_gamma(mu_II, sigma)
+
+    # print("a_EE, b_EE, average value:", a_EE, b_EE, mu_EE)
+    # print("a_EI, b_EI, average value:", a_EI, b_EI, mu_EI)
+    # print("a_IE, b_IE, average value:", a_IE, b_IE, mu_IE)
+    # print("a_II, b_II, average value:", a_II, b_II, mu_II)
+
+    # 生成连接矩阵
+    W[:N_E, :N_E] = dist.Gamma(a_EE,b_EE).sample((N_E,N_E))
+    W[:N_E, N_E:] = dist.Gamma(a_EI, b_EI).sample((N_E, N_I))
+    W[N_E:, :N_E] = dist.Gamma(a_IE, b_IE).sample((N_I, N_E))
+    W[N_E:, N_E:] = dist.Gamma(a_II, b_II).sample((N_I, N_I))
+    return W
+
+
+# functions for saving and loading parameters
 def save_model(LRSNN,dt,Sti_go,Sti_nogo,Input_go,Input_nogo,IS,m,n,path='/SanDisk/Li/LowRank_ModifiedTheta_SNN/PYTHON/models/'):
     now = datetime.now()
     formatted_now = now.strftime("%Y_%m_%d_%H_%M")

@@ -74,6 +74,9 @@ class LowRankSNN(nn.Module):
         
 
     def add_random(self,conn_rand):
+        if self.added_random:
+            print('Random connection has been added.')
+            return
         self.conn_random = conn_rand
         self.conn += conn_rand*self.RS
         self.added_random = True
@@ -91,6 +94,9 @@ class LowRankSNN(nn.Module):
         return
 
     def add_lowrank(self,conn_LR, W_out):
+        if self.added_lowrank:
+            print('Low Rank Connectivity has been added.')
+            return
         self.conn_lowrank = conn_LR
         self.conn += conn_LR
         self.W_out = W_out
