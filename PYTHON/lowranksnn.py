@@ -145,8 +145,8 @@ class LowRankSNN(nn.Module):
     def forward(self,dt,Input):
         # Input size:(N，time)
 
-        if self.conn_lowrank.shape == self.conn_random.shape:
-            print('Low-rank connectivity is added to all the connections')
+        # if self.conn_lowrank.shape == self.conn_random.shape:
+        #     print('Low-rank connectivity is added to all the connections')
         dt = torch.tensor(dt).to(Input.device)
         G_P = self.G_P
         G_L_E = self.G_L_E

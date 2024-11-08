@@ -9,6 +9,7 @@ This is to test the phase sensitivity of the low rank SNNs when doing go-nogo ta
 import torch
 import numpy as np
 from scipy.signal import hilbert
+from scipy.signal import butter, lfilter
 
 from functions import  load_config_yaml
 from functions import Generate_Vectors, Generate_RandomMatrix
@@ -106,6 +107,16 @@ for trail in range(trails):
 
     # do hilbert transform to get the phase of the conductance
     signal = np.mean(g_ref_II, axis=0)[int(T_pre/dt):]
+    # filter out the high frequency noise in the signal
+    
+    def butter_lowpass_filter(data, cutoff, fs, order=5):
+        nyquist = 0.5 * fs
+        normal_cutoff = cutoff / nyquist
+        b, a = butter(order, normal_cutoff, btype='low', analog=False)
+        y = lfilter(b, a, data)
+        return y
+    signal = butter_lowpass_filter(signal, 100, 1000/dt, order=5) # cutoff frequency higher than 100 Hz
+
     # centralize the signal
     signal = signal - np.mean(signal)
     analytic_signal = hilbert(signal)
