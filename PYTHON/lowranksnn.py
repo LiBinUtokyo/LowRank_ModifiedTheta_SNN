@@ -1,6 +1,7 @@
 
 '''
 构建基于Pytorch的lowrankSNN
+11/08: 增加导入预设值的功能
 10/30: introduced synaptic current
 10/23: 把g的位置的输出改为了[g, g_EE,g_IE,g_EI,g_II]
 '''
