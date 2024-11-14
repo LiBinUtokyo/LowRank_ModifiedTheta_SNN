@@ -1,6 +1,7 @@
 
 '''
 构建基于Pytorch的lowrankSNN
+11/14: 在g的模拟中给来自其他神经元的影响除以了dt，从而让不同的dt下发放的影响一致
 11/08: 增加指定初始值的功能,做了一些功能的优化
 10/30: introduced synaptic current
 10/23: 把g的位置的输出改为了[g, g_EE,g_IE,g_EI,g_II]
@@ -243,27 +244,27 @@ class LowRankSNN(nn.Module):
             # print(g_EE.device,self.taud_E.device,G_P[0].device,conn_EE.device,spk.device,dt.device)
             g_EE[:,step] = g_EE[:,step-1] + \
                 (-g_EE[:,step-1]/self.taud_E+ \
-                G_P[0]*conn_EE@spk[:self.N_E,step-1])*dt
+                G_P[0]*conn_EE@spk[:self.N_E,step-1]/dt)*dt
             g_EI[:,step] = g_EI[:,step-1] + \
                 (-g_EI[:,step-1]/self.taud_E+ \
-                G_P[1]*conn_EI@spk[self.N_E:self.N_E+self.N_I,step-1])*dt
+                G_P[1]*conn_EI@spk[self.N_E:self.N_E+self.N_I,step-1]/dt)*dt
             g_IE[:,step] = g_IE[:,step-1] + \
                 (-g_IE[:,step-1]/self.taud_I+ \
-                G_P[2]*conn_IE@spk[:self.N_E,step-1])*dt
+                G_P[2]*conn_IE@spk[:self.N_E,step-1]/dt)*dt
             g_II[:,step] = g_II[:,step-1] + \
                 (-g_II[:,step-1]/self.taud_I+ \
-                G_P[3]*conn_II@spk[self.N_E:self.N_E+self.N_I,step-1])*dt
+                G_P[3]*conn_II@spk[self.N_E:self.N_E+self.N_I,step-1]/dt)*dt
             # Calculate the comprehensive Synaptic Conductance (Single Exponential filter)
                 # For Excitatory Neurons
             g[:self.N_E,step] = g[0:self.N_E,step-1] + \
                 (-g[0:self.N_E,step-1]/self.taud_E+ \
                 G_P[0]*conn_EE@spk[:self.N_E,step-1]+ \
-                G_P[1]*conn_EI@spk[self.N_E:self.N_E+self.N_I,step-1])*dt
+                G_P[1]*conn_EI@spk[self.N_E:self.N_E+self.N_I,step-1]/dt)*dt
                 # For Inhibitory Neurons
             g[self.N_E:self.N_E+self.N_I,step] = g[self.N_E:self.N_E+self.N_I,step-1] + \
                 (-g[self.N_E:self.N_E+self.N_I,step-1]/self.taud_I+ \
                 G_P[2]*conn_IE@spk[:self.N_E,step-1]+ \
-                G_P[3]*conn_II@spk[self.N_E:self.N_E+self.N_I,step-1])*dt
+                G_P[3]*conn_II@spk[self.N_E:self.N_E+self.N_I,step-1]/dt)*dt
             
             # Calculate the Synaptic Current
             V[:,step-1] = self.theta2V(phase[:,step-1])
