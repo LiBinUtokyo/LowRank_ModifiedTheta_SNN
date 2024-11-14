@@ -1,17 +1,17 @@
 
 '''
 构建基于Pytorch的lowrankSNN
-11/08: 增加导入预设值的功能
+11/08: 增加指定初始值的功能,做了一些功能的优化
 10/30: introduced synaptic current
 10/23: 把g的位置的输出改为了[g, g_EE,g_IE,g_EI,g_II]
 '''
-
 
 import torch
 import numpy as np
 import torch.nn as nn
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
+plt.rcParams.update({'font.size': 30})  #设置所有字体大小
 
 class LowRankSNN(nn.Module):
     # CONSTANTS
@@ -27,6 +27,7 @@ class LowRankSNN(nn.Module):
     C1 = (2*REV_E-V_R-V_T)/(V_T-V_R)
     C2 = (2*REV_I-V_R-V_T)/(V_T-V_R)
 
+
     def __init__(self,N_E=1000,N_I=200,RS= 1,taud_E=2,taud_I=5) -> None:
         super().__init__() #调用了父类的方法
         self.N_E = torch.tensor(N_E)
@@ -38,6 +39,25 @@ class LowRankSNN(nn.Module):
         self.conn = torch.zeros(N_E+N_I,N_E+N_I)
         self.added_lowrank = False
         self.added_random = False
+        self.loaded_init = False
+
+    def load_init(self,g,g_EE,g_EI,g_IE,g_II,V,phase,I_syn,I_syn_EE,I_syn_EI,I_syn_IE,I_syn_II,spk):
+        # size of all the inputs should be N
+        self.g_init = g
+        self.g_EE_init = g_EE
+        self.g_EI_init = g_EI
+        self.g_IE_init = g_IE
+        self.g_II_init = g_II
+        self.V_init = V
+        self.phase_init = phase
+        self.I_syn_init = I_syn
+        self.I_syn_EE_init = I_syn_EE
+        self.I_syn_EI_init = I_syn_EI
+        self.I_syn_IE_init = I_syn_IE
+        self.I_syn_II_init = I_syn_II
+        self.spk_init = spk
+        self.loaded_init = True
+        print('Initial values have been loaded.')
         
 
     def show(self):
@@ -46,33 +66,50 @@ class LowRankSNN(nn.Module):
         print('Number of Neurons: ', self.N_E+self.N_I)
         print('Number of Excitatory Units: ', self.N_E)
         print('Number of Inhibitory Units: ', self.N_I)
-        # full_w = torch.mm(self.W, self.mask) #包含兴奋和抑制性信息的连接矩阵
-        # full_w = self.W * self.mask
-        zero_w = (self.conn == 0).sum().item()
-        # pos_w = (self.conn > 0).sum().item()
-        # neg_w = (full_w < 0 ).sum().item()
-        print('Zero Weights occupy: %2.2f %%'%(zero_w/((self.N_E+self.N_I)**2)*100))
-        # print('Positive Weights occupy: %2.2f %%'%(pos_w/(self.N**2)*100))
-        # print('Negative Weights occupy: %2.2f %%'%(neg_w/(self.N**2)*100))
+        print('Random Strength: ', self.RS)
+        print('Excitatory Synaptic Time Constant: ', self.taud_E)
+        print('Inhibitory Synaptic Time Constant: ', self.taud_I)
+        print('==========================================')
 
-    def show_conn(self, maxvalue = 0.001):
-        full_w = self.conn.cpu().clone().detach().numpy() #包含兴奋和抑制性信息的连接矩阵
-        # let the weight from Inhibitory be negative value
-        full_w[:,self.N_E:self.N_E+self.N_I] = -full_w[:,self.N_E:self.N_E+self.N_I]
-        colors = [(0, 0, 1), (1, 1, 1), (1, 0, 0)]  # 蓝 -> 白 -> 红
-        cmap_name = 'gradient_div_cmap'
-        gradient_cm = mcolors.LinearSegmentedColormap.from_list(cmap_name, colors, N=100)  # N=100 使渐变更加平滑
-        plt.imshow(full_w,cmap=gradient_cm,vmax = maxvalue,vmin = -maxvalue)
+    def show_conn(self):
+        W_conn = self.conn.cpu().clone().detach()
+        W_rank1 = self.conn_lowrank.cpu().clone().detach()
+        W_random = self.conn_random.cpu().clone().detach()
+
+        #draw the rank-1 matrix
+        plt.figure()
+        plt.imshow(W_rank1,interpolation='nearest')
         plt.colorbar()
-        plt.title('Connectivity Matrix')
-        plt.xlabel('From')
-        plt.xticks(np.arange(0,len(full_w)+1,500))
-        plt.ylabel('To')
-        plt.yticks(np.arange(0,len(full_w)+1,500))
-        plt.gca().xaxis.set_ticks_position('top')
-        plt.gca().xaxis.set_label_position('top')
+        plt.title('Rank-1 matrix')
         plt.show()
-        
+        # 展示各部分的平均值
+        print("Rank-1 matrix average value_EtoE:", torch.mean(W_rank1[:self.N_E, :self.N_E]))
+        print("Rank-1 matrix average value_EtoI:", torch.mean(W_rank1[:self.N_E, self.N_E:]))
+        print("Rank-1 matrix average value_ItoE:", torch.mean(W_rank1[self.N_E:, :self.N_E]))
+        print("Rank-1 matrix average value_ItoI:", torch.mean(W_rank1[self.N_E:, self.N_E:]))
+        #draw the random matrix
+        plt.figure()
+        plt.imshow(W_random,interpolation='nearest')
+        plt.colorbar()
+        plt.title('Full Rank matrix')
+        plt.show()
+        # 展示各部分的平均值
+        print("Full Rank matrix average value_EtoE:", torch.mean(W_random[:self.N_E, :self.N_E]))
+        print("Full Rank matrix average value_EtoI:", torch.mean(W_random[:self.N_E, self.N_E:]))
+        print("Full Rank matrix average value_ItoE:", torch.mean(W_random[self.N_E:, :self.N_E]))
+        print("Full Rank matrix average value_ItoI:", torch.mean(W_random[self.N_E:, self.N_E:]))
+        #draw the full connectivity
+        plt.figure()
+        plt.imshow(W_conn,interpolation='nearest')
+        plt.colorbar()
+        plt.title('Connectivity matrix')
+        plt.show()
+        # 展示各部分的平均值
+        print("Connectivity matrix average value_EtoE:", torch.mean(W_conn[:self.N_E, :self.N_E]))
+        print("Connectivity matrix average value_EtoI:", torch.mean(W_conn[:self.N_E, self.N_E:]))
+        print("Connectivity matrix average value_ItoE:", torch.mean(W_conn[self.N_E:, :self.N_E]))
+        print("Connectivity matrix average value_ItoI:", torch.mean(W_conn[self.N_E:, self.N_E:]))
+        return W_conn, W_rank1, W_random
 
     def add_random(self,conn_rand):
         if self.added_random:
@@ -144,6 +181,7 @@ class LowRankSNN(nn.Module):
         return self
     
     def forward(self,dt,Input):
+        print('Start Simulation')
         # Input size:(N，time)
 
         # if self.conn_lowrank.shape == self.conn_random.shape:
@@ -176,11 +214,27 @@ class LowRankSNN(nn.Module):
         I_syn_EI = I_syn[:self.N_E,:].clone().to(Input.device)
         I_syn_II = I_syn[:self.N_I,:].clone().to(Input.device)
 
-
+        # Spike record
         spk = torch.zeros_like(Input).to(Input.device)
 
         spk_step = []
         spk_ind = []
+
+        if self.loaded_init:
+            g[:,0] = self.g_init
+            g_EE[:,0] = self.g_EE_init
+            g_IE[:,0] = self.g_IE_init
+            g_EI[:,0] = self.g_EI_init
+            g_II[:,0] = self.g_II_init
+            V[:,0] = self.V_init
+            phase[:,0] = self.phase_init
+            I_syn[:,0] = self.I_syn_init
+            I_syn_EE[:,0] = self.I_syn_EE_init
+            I_syn_IE[:,0] = self.I_syn_IE_init
+            I_syn_EI[:,0] = self.I_syn_EI_init
+            I_syn_II[:,0] = self.I_syn_II_init
+            spk[:,0] = self.spk_init
+            print('Using loaded initial values')
 
         for step, inputs in enumerate(Input.T): #for every time step
             if step == 0: continue
@@ -251,5 +305,7 @@ class LowRankSNN(nn.Module):
         Out = torch.tanh(I_syn_EE).T@self.W_out[:self.N_E] # size(T,1)
 
         V[:,-1] = self.theta2V(phase[:,-1])
-        return Out, V, [g,g_EE,g_EI,g_IE,g_II],[I_syn,I_syn_EE,I_syn_EI,I_syn_IE,I_syn_II], spk_step, spk_ind
+        print('Simulation Finished')
+
+        return Out, V, [g,g_EE,g_EI,g_IE,g_II],[I_syn,I_syn_EE,I_syn_EI,I_syn_IE,I_syn_II], spk_step, spk_ind, spk, phase
 

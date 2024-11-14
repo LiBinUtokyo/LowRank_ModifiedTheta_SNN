@@ -100,22 +100,40 @@ for trail in range(trails):
     bias = bias.to(device)
 
     # Start Simulation
-    _, _, g_ref, _, _, _ = LRSNN(dt,bias)
+    Out_ref, V_ref, [g_ref,g_ref_EE,g_ref_EI,g_ref_IE,g_ref_II],[I_ref_syn,I_ref_syn_EE,I_ref_syn_EI,I_ref_syn_IE,I_ref_syn_II], spk_step_ref, spk_ind_ref, spk_ref, phase_ref = LRSNN(dt,bias)
 
-    g_ref_II = g_ref[-1]
-    g_ref_II = g_ref_II.cpu().detach().numpy()
+    # load the values at T_pre
+    # to see whether the results are the same
+    step_init = int(T_pre/dt)
+    g_init = g_ref[:,step_init].clone().detach()
+    g_init_EE = g_ref_EE[:,step_init].clone().detach()
+    g_init_EI = g_ref_EI[:,step_init].clone().detach()
+    g_init_IE = g_ref_IE[:,step_init].clone().detach()
+    g_init_II = g_ref_II[:,step_init].clone().detach()
+    V_init = V_ref[:,step_init].clone().detach()
+    phase_init = phase_ref[:,step_init].clone().detach()
+    I_syn_init = I_ref_syn[:,step_init].clone().detach()
+    I_syn_init_EE = I_ref_syn_EE[:,step_init].clone().detach()
+    I_syn_init_EI = I_ref_syn_EI[:,step_init].clone().detach()
+    I_syn_init_IE = I_ref_syn_IE[:,step_init].clone().detach()
+    I_syn_init_II = I_ref_syn_II[:,step_init].clone().detach()
+    spk_init = spk_ref[:,step_init]
+    LRSNN.load_init(g_init, g_init_EE, g_init_EI, g_init_IE, g_init_II, V_init, phase_init, I_syn_init, I_syn_init_EE, I_syn_init_EI, I_syn_init_IE, I_syn_init_II, spk_init)
+
+    g_ref_EE_np = g_ref_EE.clone().cpu().detach().numpy()
+    g_ref_II_np = g_ref_II.clone().cpu().detach().numpy()
 
     # do hilbert transform to get the phase of the conductance
-    signal = np.mean(g_ref_II, axis=0)[int(T_pre/dt):]
+    signal = np.mean(g_ref_II_np, axis=0)[int(T_pre/dt):]
     # filter out the high frequency noise in the signal
     
-    def butter_lowpass_filter(data, cutoff, fs, order=5):
-        nyquist = 0.5 * fs
-        normal_cutoff = cutoff / nyquist
-        b, a = butter(order, normal_cutoff, btype='low', analog=False)
-        y = lfilter(b, a, data)
-        return y
-    signal = butter_lowpass_filter(signal, 100, 1000/dt, order=5) # cutoff frequency higher than 100 Hz
+    # def butter_lowpass_filter(data, cutoff, fs, order=5):
+    #     nyquist = 0.5 * fs
+    #     normal_cutoff = cutoff / nyquist
+    #     b, a = butter(order, normal_cutoff, btype='low', analog=False)
+    #     y = lfilter(b, a, data)
+    #     return y
+    # signal = butter_lowpass_filter(signal, 100, 1000/dt, order=5) # cutoff frequency higher than 100 Hz
 
     # centralize the signal
     signal = signal - np.mean(signal)
@@ -131,7 +149,7 @@ for trail in range(trails):
             phase_start_ind = i+1
             flag = 0
             continue
-        if flag == 0 and instantaneous_phase[i]-instantaneous_phase[i+1]>np.pi:
+        if flag == 0 and instantaneous_phase[i]-instantaneous_phase[i+1]>np.pi and (i-phase_start_ind)*dt > 10:
             phase_end = instantaneous_phase[i]
             phase_end_ind = i
             break
@@ -151,7 +169,8 @@ for trail in range(trails):
     reaction_times = []
 
     for T_phase in phases_eff_times:
-        T_pre += T_phase
+        T_pre = T_phase
+        T_after = 10 # length of time after sti (ms) for the 2nd simulation
         T = T_pre+T_sti+T_after # length of Period time (ms）
 
         Input_go = torch.zeros((LRSNN.N_E+LRSNN.N_I,int(T/dt))) #size:(N,time)
@@ -172,11 +191,13 @@ for trail in range(trails):
         bias = bias.to(device)
 
         # Start Simulation
-        Out_go, V_go, g_go, I_syn_go, spk_step_go, spk_ind_go = LRSNN(dt,Input_go+bias)
-        Out_nogo, V_nogo, g_nogo, I_syn_nogo, spk_step_nogo, spk_ind_nogo = LRSNN(dt,Input_nogo+bias)
+        # Out_go, V_go, g_go, I_syn_go, spk_step_go, spk_ind_go,_,_ = LRSNN(dt,Input_go+bias)
+        # Out_nogo, V_nogo, g_nogo, I_syn_nogo, spk_step_nogo, spk_ind_nogo,_,_ = LRSNN(dt,Input_nogo+bias)
+        Out_go,_,_,_,_,_,_,_ = LRSNN(dt,Input_go+bias)
+        Out_nogo,_,_,_,_,_,_,_ = LRSNN(dt,Input_nogo+bias)
 
-        g_go_EE = g_go[1]
-        g_nogo_EE = g_nogo[1]
+        # g_go_EE = g_go[1]
+        # g_nogo_EE = g_nogo[1]
 
         # define the reaction time as performance
         # reaction time: 从施加刺激开始到输出不为0的时间（或者到go输出大于nogo输出的时间）
@@ -187,7 +208,6 @@ for trail in range(trails):
         reaction_times.append(reaction_time)
         print('Phase: ', phases_eff[phases_eff_times==T_phase])
         print('Reaction Time: ', reaction_time, 'ms')
-        T_pre -= T_phase
 
     # Save the reaction times and effective phases in to a csv file (named as 'reaction_times_yymmddhhmmss.csv')
     now = datetime.datetime.now()
