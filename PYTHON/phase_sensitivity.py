@@ -143,16 +143,25 @@ for trail in range(trails):
     # find out the first minimum phase
     # take phase_start as -pi, and phase_end as pi
     flag = 1
-    for i in range(len(instantaneous_phase)):
-        if flag == 1 and instantaneous_phase[i]-instantaneous_phase[i+1]>np.pi:
-            phase_start = instantaneous_phase[i+1]
-            phase_start_ind = i+1
+    for i in range(1,len(instantaneous_phase)-1):
+        if flag == 1 and instantaneous_phase[i-1]>instantaneous_phase[i]<instantaneous_phase[i+1]:
+            phase_start = instantaneous_phase[i]
+            phase_start_ind = i
             flag = 0
             continue
-        if flag == 0 and instantaneous_phase[i]-instantaneous_phase[i+1]>np.pi and (i-phase_start_ind)*dt > 10:
+        if flag == 0 and instantaneous_phase[i-1]<instantaneous_phase[i]>instantaneous_phase[i+1] and (i-phase_start_ind)*dt>10:
             phase_end = instantaneous_phase[i]
             phase_end_ind = i
             break
+        # if did not find the phase_end, return error message and jump to the next trail
+        print('Error: did not find the phase_end (or phase_start) in the instantaneous_phase')
+        # store the instantaneous_phase into a file
+        np.save('./data_phase_to_reaction_times/instantaneous_phase.npy', instantaneous_phase)
+        flag = 2
+    if flag == 2:
+        continue
+    # #read the instantaneous_phase
+    # instantaneous_phase = np.load('./data_phase_to_reaction_times/instantaneous_phase.npy')   
 
     phases_eff = np.linspace(phase_start, phase_end, num_phase)
 

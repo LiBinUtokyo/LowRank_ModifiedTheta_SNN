@@ -11,7 +11,7 @@ factor_mn: 1 # scaling factor for the mean of W_rank1
 taud_E: 2
 taud_I: 5
 
-num_phase: 30 # number of phases to test
+num_phase: 60 # number of phases to test
 trails: 5 # number of trails
 
 eta_E: 0 # average bias input to E (lorentzian distribution)
