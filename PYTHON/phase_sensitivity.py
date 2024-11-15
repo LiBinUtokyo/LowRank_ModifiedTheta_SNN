@@ -152,13 +152,13 @@ for trail in range(trails):
         if flag == 0 and instantaneous_phase[i-1]<instantaneous_phase[i]>instantaneous_phase[i+1] and (i-phase_start_ind)*dt>10:
             phase_end = instantaneous_phase[i]
             phase_end_ind = i
-            break
+            flag = -1
+    if flag != -1:
         # if did not find the phase_end, return error message and jump to the next trail
         print('Error: did not find the phase_end (or phase_start) in the instantaneous_phase')
         # store the instantaneous_phase into a file
-        np.save('./data_phase_to_reaction_times/instantaneous_phase.npy', instantaneous_phase)
-        flag = 2
-    if flag == 2:
+        now = datetime.datetime.now()
+        np.save('./data_phase_to_reaction_times/instantaneous_phase'+now.strftime('%y%m%d%H%M%S')+'.npy', instantaneous_phase)
         continue
     # #read the instantaneous_phase
     # instantaneous_phase = np.load('./data_phase_to_reaction_times/instantaneous_phase.npy')   
