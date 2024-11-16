@@ -144,12 +144,12 @@ for trail in range(trails):
     # take phase_start as -pi, and phase_end as pi
     flag = 1
     for i in range(1,len(instantaneous_phase)-1):
-        if flag == 1 and instantaneous_phase[i-1]>instantaneous_phase[i]<instantaneous_phase[i+1]:
+        if flag == 1 and instantaneous_phase[i-1]>instantaneous_phase[i]<instantaneous_phase[i+1] and instantaneous_phase[i]< -2.5:
             phase_start = instantaneous_phase[i]
             phase_start_ind = i
             flag = 0
             continue
-        if flag == 0 and instantaneous_phase[i-1]<instantaneous_phase[i]>instantaneous_phase[i+1] and (i-phase_start_ind)*dt>10:
+        if flag == 0 and instantaneous_phase[i-1]<instantaneous_phase[i]>instantaneous_phase[i+1] and instantaneous_phase[i]> 2.5 and (i-phase_start_ind)*dt>10:
             phase_end = instantaneous_phase[i]
             phase_end_ind = i
             flag = -1
