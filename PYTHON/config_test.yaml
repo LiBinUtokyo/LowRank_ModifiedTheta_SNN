@@ -30,7 +30,7 @@ mu: 0
 sigma: 0.1
 # mu_rand: 0.1  # 1/(N_E+N_I)
 sigma_rand: 0.1   # 100/(N_E+N_I)
-dt: 0.1 #(ms/step)
+dt: 0.01 #(ms/step)
 T_pre: 100 # length of time before sti (ms)
 T_sti: 10 # length of time for sti (ms)
 T_after: 90 # length of time after sti (ms)

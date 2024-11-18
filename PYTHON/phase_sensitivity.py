@@ -16,6 +16,8 @@ from functions import Generate_Vectors, Generate_RandomMatrix
 from lowranksnn import LowRankSNN
 import csv
 import datetime
+
+
 # Read the configuration file
 config = load_config_yaml('config_test_phase_sensitivity.yaml')
 
@@ -144,12 +146,12 @@ for trail in range(trails):
     # take phase_start as -pi, and phase_end as pi
     flag = 1
     for i in range(1,len(instantaneous_phase)-1):
-        if flag == 1 and instantaneous_phase[i-1]>instantaneous_phase[i]<instantaneous_phase[i+1] and instantaneous_phase[i]< -2.5:
+        if flag == 1 and instantaneous_phase[i-1]>instantaneous_phase[i]<instantaneous_phase[i+1] and instantaneous_phase[i]< -3.14:
             phase_start = instantaneous_phase[i]
             phase_start_ind = i
             flag = 0
             continue
-        if flag == 0 and instantaneous_phase[i-1]<instantaneous_phase[i]>instantaneous_phase[i+1] and instantaneous_phase[i]> 2.5 and (i-phase_start_ind)*dt>10:
+        if flag == 0 and instantaneous_phase[i-1]<instantaneous_phase[i]>instantaneous_phase[i+1] and instantaneous_phase[i]> 3.14 and (i-phase_start_ind)*dt>10:
             phase_end = instantaneous_phase[i]
             phase_end_ind = i
             flag = -1
@@ -158,7 +160,8 @@ for trail in range(trails):
         print('Error: did not find the phase_end (or phase_start) in the instantaneous_phase')
         # store the instantaneous_phase into a file
         now = datetime.datetime.now()
-        np.save('./data_phase_to_reaction_times/instantaneous_phase'+now.strftime('%y%m%d%H%M%S')+'.npy', instantaneous_phase)
+        np.save('./error_phase_to_reaction_times/instantaneous_phase'+now.strftime('%y%m%d%H%M%S')+'.npy', instantaneous_phase)
+        np.save('./error_phase_to_reaction_times/signal'+now.strftime('%y%m%d%H%M%S')+'.npy', signal)
         continue
     # #read the instantaneous_phase
     # instantaneous_phase = np.load('./data_phase_to_reaction_times/instantaneous_phase.npy')   
@@ -176,6 +179,9 @@ for trail in range(trails):
     #simulation: get the reaction time for different phases
     #store the reaction time for different phases
     reaction_times = []
+
+    T_pre_origin = T_pre
+    T_after_origin = T_after
 
     for T_phase in phases_eff_times:
         T_pre = T_phase
@@ -217,7 +223,10 @@ for trail in range(trails):
         reaction_times.append(reaction_time)
         print('Phase: ', phases_eff[phases_eff_times==T_phase])
         print('Reaction Time: ', reaction_time, 'ms')
+        print('--------------------------------------------')
 
+    T_pre = T_pre_origin
+    T_after = T_after_origin
     # Save the reaction times and effective phases in to a csv file (named as 'reaction_times_yymmddhhmmss.csv')
     now = datetime.datetime.now()
     filename = './data_phase_to_reaction_times/reaction_times_'+now.strftime('%y%m%d%H%M%S')+'.csv'
