@@ -18,7 +18,7 @@ taud_I: 5
 #  - 100
 # ratio_fast: 0.2 # ratio of fast synapses
 
-num_phase: 33 # number of phases to test
+num_phase: 9 # number of phases to test
 trails: 1 # number of trails
 
 eta_E: 0 # average bias input to E (lorentzian distribution)

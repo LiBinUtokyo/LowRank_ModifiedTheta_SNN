@@ -284,3 +284,22 @@ def load_config_yaml(config_file):
     with open(config_file, 'r') as f:
         config = yaml.safe_load(f)
     return config
+
+def load_init(LRSNN, T_pre, dt, g_ref, g_ref_EE, g_ref_EI, g_ref_IE, g_ref_II, V_ref, phase_ref, I_ref_syn, I_ref_syn_EE, I_ref_syn_EI, I_ref_syn_IE, I_ref_syn_II, spk_ref):
+    # load the predefined values into the model
+    step_init = int(T_pre/dt)
+    g_init = g_ref[:,step_init].clone().detach()
+    g_init_EE = g_ref_EE[:,step_init].clone().detach()
+    g_init_EI = g_ref_EI[:,step_init].clone().detach()
+    g_init_IE = g_ref_IE[:,step_init].clone().detach()
+    g_init_II = g_ref_II[:,step_init].clone().detach()
+    V_init = V_ref[:,step_init].clone().detach()
+    phase_init = phase_ref[:,step_init].clone().detach()
+    I_syn_init = I_ref_syn[:,step_init].clone().detach()
+    I_syn_init_EE = I_ref_syn_EE[:,step_init].clone().detach()
+    I_syn_init_EI = I_ref_syn_EI[:,step_init].clone().detach()
+    I_syn_init_IE = I_ref_syn_IE[:,step_init].clone().detach()
+    I_syn_init_II = I_ref_syn_II[:,step_init].clone().detach()
+    spk_init = spk_ref[:,step_init]
+    LRSNN.load_init(g_init, g_init_EE, g_init_EI, g_init_IE, g_init_II, V_init, phase_init, I_syn_init, I_syn_init_EE, I_syn_init_EI, I_syn_init_IE, I_syn_init_II, spk_init)
+    return LRSNN
