@@ -9,6 +9,7 @@ import torch.distributions as dist
 # Functions for drawing
 def Draw_Output(ax,data,label_data,dt,input_data,color_data='#1C63A9'):
     # tt = np.linspace(0,len(data)-1)*dt
+    # input_data: size:(N,time)
     tt = np.array(range(len(data)))*dt
     ax.plot(tt,data,color = color_data, label = '$'+label_data+'$')
 
@@ -17,12 +18,8 @@ def Draw_Output(ax,data,label_data,dt,input_data,color_data='#1C63A9'):
 
     ax.set_xlim([0, tt[-1]])
     ax.set_ylim([np.min([0,np.min(data),ax.get_ylim()[0]]), np.max([0.0000001,np.max(data),ax.get_ylim()[1]])])
-
-    non_zero_columns = np.any(input_data!=0, axis=0)
-    non_zero_columns = np.where(non_zero_columns)[0]
-    start_sti = non_zero_columns[0]*dt
-    end_sti = non_zero_columns[-1]*dt
-    ax.fill_between([start_sti,end_sti],-2,1,alpha = 0.1)
+    # shade the stimulus period (where the input is not zero)
+    ax.fill_between(tt, ax.get_ylim()[0], ax.get_ylim()[1], where=input_data[0].squeeze()!=0, color='gray', alpha=0.1)
     ax.legend(loc = 1, prop={'size':10})
 
 def Draw_Conductance(ax,data,color_data,label_data,dt,input_data,ylim=None,title=None):
@@ -50,39 +47,21 @@ def Draw_Conductance(ax,data,color_data,label_data,dt,input_data,ylim=None,title
         ax.set_ylim(ylim)
     else:
         ax.set_ylim([0,np.max(data)*1.1])
-    # print(np.max(data),ax.get_ylim()[1])
-    non_zero_columns = np.any(input_data!=0, axis=0)
-    non_zero_columns = np.where(non_zero_columns)[0]
-    start_sti = non_zero_columns[0]*dt
-    end_sti = non_zero_columns[-1]*dt
-    # ax.fill_between([start_sti,end_sti],0,ax.get_ylim()[1],alpha = 0.1)
-    ax.fill_between([start_sti,end_sti],-2,1,alpha = 0.1)
+    ax.fill_between(tt, ax.get_ylim()[0], ax.get_ylim()[1], where=input_data[0].squeeze()!=0, color='gray', alpha=0.1)
     ax.legend(loc = 1, prop={'size':10})
     if title:
         ax.set_title(title)
 
 
 def Draw_RasterPlot(ax, spk_step, spk_ind, title_name, dt, input_data, N_E, N_I):
+    tt = np.array(range(len(input_data[0])))*dt
 
-    # ax.scatter(spk_step, spk_ind, color = 'red',s=5)
-    # change the color of the Inhibitory neurons
-    # for i in range(len(spk_step)):
-    #     if spk_ind[i] >= N_E:
-    #         ax.scatter(spk_step[i]*dt, spk_ind[i], color = 'blue',s=5)
-    #         print(i)
-    #     else:
-    #         ax.scatter(spk_step[i]*dt, spk_ind[i], color = 'red',s=5)
-    #         print(i)
     # 预先计算需要绘制的点和颜色
     x_values = np.array(spk_step) * dt
     colors = ['blue' if ind >= N_E else 'red' for ind in spk_ind]
 
     # 一次性绘制所有点
     ax.scatter(x_values, spk_ind, c=colors, s=1)
-
-    # # 如果仍然需要打印 i，可以使用一个简单的 for 循环
-    # for i in range(len(spk_step)):
-    #     print(i)
 
     ax.set_xlabel('time (ms)')
     ax.set_ylabel('Neuron Index')
@@ -94,7 +73,7 @@ def Draw_RasterPlot(ax, spk_step, spk_ind, title_name, dt, input_data, N_E, N_I)
     non_zero_columns = np.where(non_zero_columns)[0]
     start_sti = non_zero_columns[0]*dt
     end_sti = non_zero_columns[-1]*dt
-    ax.fill_between([start_sti,end_sti],-1,N_E+N_I,alpha = 0.1)
+    ax.fill_between(tt, ax.get_ylim()[0], ax.get_ylim()[1], where=input_data[0].squeeze()!=0, color='gray', alpha=0.1)
     # ax.legend(loc = 1, prop={'size':10})
     ax.set_title(title_name)
 
