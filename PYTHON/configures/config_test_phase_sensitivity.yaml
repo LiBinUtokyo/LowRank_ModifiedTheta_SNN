@@ -12,21 +12,21 @@ taud_E: 2
 taud_I: 5
 
 num_phase: 33 # number of phases to test
-trails: 15 # number of trails
+trails: 1 # number of trails
 
-eta_E: 0 # average bias input to E (lorentzian distribution)
+eta_E: 1 # average bias input to E (lorentzian distribution)
 eta_I: 2
 delta_E: 0 # variance of bias input to E (lorentzian distribution)
-delta_I: 0.05
+delta_I: 0
 
 mu: 0
 sigma: 0.1
 # mu_rand: 0.1  # 1/(N_E+N_I)
 sigma_rand: 0.1   # 100/(N_E+N_I)
-dt: 0.01 #(ms/step)
+dt: 0.1 #(ms/step)
 T_pre: 100 # length of time before sti (ms)
 T_sti: 10 # length of time for sti (ms)
-T_after: 90 # length of time after sti (ms)
+T_after: 890 # length of time after sti (ms)
 InputStrength: 10 #Input Strength (maybe chage to norm in the future)
 # norm_input: 1 # Normalization of input
 color_Go: '#1C63A9'
