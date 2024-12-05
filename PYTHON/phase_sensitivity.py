@@ -11,15 +11,16 @@ import numpy as np
 from scipy.signal import hilbert
 from scipy.signal import butter, lfilter
 
-from functions import  load_config_yaml
+from functions import  load_config_yaml, load_init
 from functions import Generate_Vectors, Generate_RandomMatrix
 from lowranksnn import LowRankSNN
 import csv
 import datetime
+import os
 
 
 # Read the configuration file
-config = load_config_yaml('config_test_phase_sensitivity.yaml')
+config = load_config_yaml('./configures/config_test_phase_sensitivity.yaml')
 
 N_E = config['N_E']
 N_I = config['N_I']
@@ -106,21 +107,7 @@ for trail in range(trails):
 
     # load the values at T_pre
     # to see whether the results are the same
-    step_init = int(T_pre/dt)
-    g_init = g_ref[:,step_init].clone().detach()
-    g_init_EE = g_ref_EE[:,step_init].clone().detach()
-    g_init_EI = g_ref_EI[:,step_init].clone().detach()
-    g_init_IE = g_ref_IE[:,step_init].clone().detach()
-    g_init_II = g_ref_II[:,step_init].clone().detach()
-    V_init = V_ref[:,step_init].clone().detach()
-    phase_init = phase_ref[:,step_init].clone().detach()
-    I_syn_init = I_ref_syn[:,step_init].clone().detach()
-    I_syn_init_EE = I_ref_syn_EE[:,step_init].clone().detach()
-    I_syn_init_EI = I_ref_syn_EI[:,step_init].clone().detach()
-    I_syn_init_IE = I_ref_syn_IE[:,step_init].clone().detach()
-    I_syn_init_II = I_ref_syn_II[:,step_init].clone().detach()
-    spk_init = spk_ref[:,step_init]
-    LRSNN.load_init(g_init, g_init_EE, g_init_EI, g_init_IE, g_init_II, V_init, phase_init, I_syn_init, I_syn_init_EE, I_syn_init_EI, I_syn_init_IE, I_syn_init_II, spk_init)
+    LRSNN = load_init(LRSNN, T_pre, dt, g_ref, g_ref_EE, g_ref_EI, g_ref_IE, g_ref_II, V_ref, phase_ref, I_ref_syn, I_ref_syn_EE, I_ref_syn_EI, I_ref_syn_IE, I_ref_syn_II, spk_ref)
 
     g_ref_EE_np = g_ref_EE.clone().cpu().detach().numpy()
     g_ref_II_np = g_ref_II.clone().cpu().detach().numpy()
@@ -146,12 +133,12 @@ for trail in range(trails):
     # take phase_start as -pi, and phase_end as pi
     flag = 1
     for i in range(1,len(instantaneous_phase)-1):
-        if flag == 1 and instantaneous_phase[i-1]>instantaneous_phase[i]<instantaneous_phase[i+1] and instantaneous_phase[i]< -3.14:
+        if flag == 1 and instantaneous_phase[i-1]>instantaneous_phase[i]<instantaneous_phase[i+1] and instantaneous_phase[i]< -3.13:
             phase_start = instantaneous_phase[i]
             phase_start_ind = i
             flag = 0
             continue
-        if flag == 0 and instantaneous_phase[i-1]<instantaneous_phase[i]>instantaneous_phase[i+1] and instantaneous_phase[i]> 3.14 and (i-phase_start_ind)*dt>10:
+        if flag == 0 and instantaneous_phase[i-1]<instantaneous_phase[i]>instantaneous_phase[i+1] and instantaneous_phase[i]> 3.13 and (i-phase_start_ind)*dt>10:
             phase_end = instantaneous_phase[i]
             phase_end_ind = i
             flag = -1
@@ -159,9 +146,9 @@ for trail in range(trails):
         # if did not find the phase_end, return error message and jump to the next trail
         print('Error: did not find the phase_end (or phase_start) in the instantaneous_phase')
         # store the instantaneous_phase into a file
-        now = datetime.datetime.now()
-        np.save('./error_phase_to_reaction_times/instantaneous_phase'+now.strftime('%y%m%d%H%M%S')+'.npy', instantaneous_phase)
-        np.save('./error_phase_to_reaction_times/signal'+now.strftime('%y%m%d%H%M%S')+'.npy', signal)
+        # now = datetime.datetime.now()
+        # np.save('./error_phase_to_reaction_times/instantaneous_phase'+now.strftime('%y%m%d%H%M%S')+'.npy', instantaneous_phase)
+        # np.save('./error_phase_to_reaction_times/signal'+now.strftime('%y%m%d%H%M%S')+'.npy', signal)
         continue
     # #read the instantaneous_phase
     # instantaneous_phase = np.load('./data_phase_to_reaction_times/instantaneous_phase.npy')   
@@ -179,25 +166,32 @@ for trail in range(trails):
     #simulation: get the reaction time for different phases
     #store the reaction time for different phases
     reaction_times = []
-
+    Input_go_rec = []
+    Input_nogo_rec = []
+    Out_go_rec = []
+    Out_nogo_rec = []
     T_pre_origin = T_pre
     T_after_origin = T_after
 
     for T_phase in phases_eff_times:
         T_pre = T_phase
-        T_after = 10 # length of time after sti (ms) for the 2nd simulation
-        T = T_pre+T_sti+T_after # length of Period time (ms）
+        T_after = T_after_origin-T_phase # length of time after sti (ms) for the 2nd simulation
+        # T = T_pre+T_sti+T_after # length of Period time (ms）
+        T = T_pre+T_sti+T_after
 
         Input_go = torch.zeros((LRSNN.N_E+LRSNN.N_I,int(T/dt))) #size:(N,time)
         Input_go[:,int(T_pre/dt):int((T_pre+T_sti)/dt)] = IS*Sti_go
         Input_nogo = torch.zeros((LRSNN.N_E+LRSNN.N_I,int(T/dt)))
         Input_nogo[:,int(T_pre/dt):int((T_pre+T_sti)/dt)] = IS*Sti_nogo
 
+        Input_go_rec.append(Input_go.tolist())
+        Input_nogo_rec.append(Input_nogo.tolist())
+
         # bias current
         bias = torch.zeros_like(Input_go)
         bias[:N_E,:] = (eta_E+delta_E*torch.tan(torch.tensor(np.pi*(np.arange(1,N_E+1)/(N_E+1)-1/2)))).unsqueeze(1)
         bias[N_E:,:] = (eta_I+delta_I*torch.tan(torch.tensor(np.pi*(np.arange(1,N_I+1)/(N_I+1)-1/2)))).unsqueeze(1)
-    
+
         #将模型及相应属性移动到GPU
         device = torch.device('cuda:0')
         LRSNN = LRSNN.to(device)
@@ -205,11 +199,14 @@ for trail in range(trails):
         Input_nogo = Input_nogo.to(device)
         bias = bias.to(device)
 
+        # Note: initial values has been loaded
         # Start Simulation
-        # Out_go, V_go, g_go, I_syn_go, spk_step_go, spk_ind_go,_,_ = LRSNN(dt,Input_go+bias)
-        # Out_nogo, V_nogo, g_nogo, I_syn_nogo, spk_step_nogo, spk_ind_nogo,_,_ = LRSNN(dt,Input_nogo+bias)
-        Out_go,_,_,_,_,_,_,_ = LRSNN(dt,Input_go+bias)
-        Out_nogo,_,_,_,_,_,_,_ = LRSNN(dt,Input_nogo+bias)
+        Out_go, _,_,_, _,_,_,_ = LRSNN(dt,Input_go+bias)
+        Out_nogo, _,_,_, _,_,_,_ = LRSNN(dt,Input_nogo+bias)
+
+        Out_go_rec.append(Out_go.cpu().tolist())
+        Out_nogo_rec.append(Out_nogo.cpu().tolist())
+        print('Phase: ', phases_eff[phases_eff_times==T_phase])
 
         # g_go_EE = g_go[1]
         # g_nogo_EE = g_nogo[1]
@@ -217,24 +214,34 @@ for trail in range(trails):
         # define the reaction time as performance
         # reaction time: 从施加刺激开始到输出不为0的时间（或者到go输出大于nogo输出的时间）
         # calculate the time when the output of go exceed the output of nogo
-        difference = Out_go - Out_nogo
-        exceed_time = torch.nonzero(difference.squeeze()>0)[0].item()*dt
-        reaction_time = exceed_time-T_pre
-        reaction_times.append(reaction_time)
-        print('Phase: ', phases_eff[phases_eff_times==T_phase])
-        print('Reaction Time: ', reaction_time, 'ms')
-        print('--------------------------------------------')
+        # difference = Out_go - Out_nogo
+        # exceed_time = torch.nonzero(difference.squeeze()>0)[0].item()*dt
+        # reaction_time = exceed_time-T_pre
+        # reaction_times.append(reaction_time)
+        # print('Phase: ', phases_eff[phases_eff_times==T_phase])
+        # print('Reaction Time: ', reaction_time, 'ms')
+        # print('--------------------------------------------')
 
     T_pre = T_pre_origin
     T_after = T_after_origin
-    # Save the reaction times and effective phases in to a csv file (named as 'reaction_times_yymmddhhmmss.csv')
+    # # Save the reaction times and effective phases in to a csv file (named as 'reaction_times_yymmddhhmmss.csv')
+    # now = datetime.datetime.now()
+    # filename = './data_phase_to_reaction_times/reaction_times_'+now.strftime('%y%m%d%H%M%S')+'.csv'
+    # with open(filename, mode='w') as file:
+    #     writer = csv.writer(file)
+    #     for i in range(len(phases_eff)):
+    #         writer.writerow([phases_eff[i], reaction_times[i]])
+    Input_go_rec = np.array(Input_go_rec)
+    Out_go_rec = np.array(Out_go_rec)
+    Out_nogo_rec = np.array(Out_nogo_rec)
     now = datetime.datetime.now()
-    filename = './data_phase_to_reaction_times/reaction_times_'+now.strftime('%y%m%d%H%M%S')+'.csv'
-    with open(filename, mode='w') as file:
-        writer = csv.writer(file)
-        for i in range(len(phases_eff)):
-            writer.writerow([phases_eff[i], reaction_times[i]])
-
+    folder = f'./data_phase_sensitivity/{now.strftime("%y%m%d%H%M%S")}'
+    os.makedirs(folder)
+    np.save(folder+'/Input_go_rec'+'.npy', Input_go_rec)
+    np.save(folder+'/Input_nogo_rec'+'.npy', Input_nogo_rec)
+    np.save(folder+'/Out_go_rec'+'.npy', Out_go_rec)
+    np.save(folder+'/Out_nogo_rec'+'.npy', Out_nogo_rec)
+    np.save(folder+'/phases_eff'+'.npy', phases_eff)
 
 
 
