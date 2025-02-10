@@ -15,7 +15,7 @@ num_phase: 33 # number of phases to test
 trails: 15 # number of trails
 
 eta_E: 1 # average bias input to E (lorentzian distribution)
-eta_I: 2
+eta_I: 1
 delta_E: 0 # variance of bias input to E (lorentzian distribution)
 delta_I: 0
 

@@ -37,7 +37,7 @@ def Draw_Conductance(ax,data,color_data,label_data,dt,input_data,ylim=None,title
             print('g is all zero')
             return
 
-    ax.set_xlabel('time (ms)')
+    ax.set_xlabel('Time (ms)')
     ax.set_ylabel('g (mS/cm^2)')
 
     ax.set_xlim([0, tt[-1]])
@@ -48,7 +48,7 @@ def Draw_Conductance(ax,data,color_data,label_data,dt,input_data,ylim=None,title
     else:
         ax.set_ylim([0,np.max(data)*1.1])
     ax.fill_between(tt, ax.get_ylim()[0], ax.get_ylim()[1], where=input_data[0].squeeze()!=0, color='gray', alpha=0.1)
-    ax.legend(loc = 1, prop={'size':10})
+    ax.legend(loc = 1, prop={'size':20})
     if title:
         ax.set_title(title)
 
@@ -63,7 +63,7 @@ def Draw_RasterPlot(ax, spk_step, spk_ind, title_name, dt, input_data, N_E, N_I)
     # 一次性绘制所有点
     ax.scatter(x_values, spk_ind, c=colors, s=1)
 
-    ax.set_xlabel('time (ms)')
+    ax.set_xlabel('Time (ms)')
     ax.set_ylabel('Neuron Index')
 
     ax.set_xlim([0, len(input_data[0])*dt])
