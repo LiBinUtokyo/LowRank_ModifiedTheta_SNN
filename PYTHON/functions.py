@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import torch.distributions as dist
 
 # Functions for drawing
-def Draw_Output(ax,data,label_data,dt,input_data,color_data='#1C63A9'):
+def Draw_Output(ax,data,label_data,dt,input_data,color_data='#1C63A9',ylim=None):
     # tt = np.linspace(0,len(data)-1)*dt
     # input_data: size:(N,time)
     tt = np.array(range(len(data)))*dt
@@ -17,10 +17,14 @@ def Draw_Output(ax,data,label_data,dt,input_data,color_data='#1C63A9'):
     ax.set_ylabel('Read Out')
 
     ax.set_xlim([0, tt[-1]])
-    ax.set_ylim([np.min([0,np.min(data),ax.get_ylim()[0]]), np.max([0.0000001,np.max(data),ax.get_ylim()[1]])])
+    if ylim:
+        ax.set_ylim(ylim)
+    else:
+        ax.set_ylim([np.min([0,np.min(data),ax.get_ylim()[0]]), np.max([0.0000001,np.max(data),ax.get_ylim()[1]])])
     # shade the stimulus period (where the input is not zero)
     ax.fill_between(tt, ax.get_ylim()[0], ax.get_ylim()[1], where=input_data[0].squeeze()!=0, color='gray', alpha=0.1)
     ax.legend(loc = 1, prop={'size':10})
+    return ax.get_ylim()
 
 def Draw_Conductance(ax,data,color_data,label_data,dt,input_data,ylim=None,title=None):
     if type(label_data) == list:
@@ -123,7 +127,7 @@ def Draw_Projection(ax,activity,direction1,direction2,title_name='Projection',co
     #return the ylim and xlim
     return ax.get_ylim(),ax.get_xlim()
 
-def show_mn(N,N_E, N_I, m,n,Sti_nogo,factor_mn):
+def show_mn(m,n,Sti_nogo,factor_mn,N_E):
 
     # draw the vectors m, n, Sti_nogo in heatmap
     plt.figure()
