@@ -127,6 +127,34 @@ def Draw_Projection(ax,activity,direction1,direction2,title_name='Projection',co
     #return the ylim and xlim
     return ax.get_ylim(),ax.get_xlim()
 
+def plot_peak_envelope(ax, time, signal, peak_indx, envelope, peak_times, peak_values, label, input_data, ylim=None):
+    """
+    在指定的ax对象上绘制信号的包络图。
+    
+    参数:
+        ax (matplotlib.axes.Axes): 用于绘图的轴对象。
+        time (array-like): 时间数组。
+        signal (array-like): 原始信号数据。
+        peak_indx (array-like): 峰值的索引范围。
+        envelope (array-like): 包络信号数据。
+        peak_times (array-like): 峰值时间点。
+        peak_values (array-like): 峰值值。
+        label (str): 图表标题中信号的标签。
+    """
+    ax.plot(time, signal, label='Energy of Output', alpha=0.7)
+    ax.plot(time[peak_indx[0]:], envelope[peak_indx[0]:], label='Envelope (Peaks)', color='red', linewidth=2)
+    ax.scatter(peak_times, peak_values, color='orange', label='Peaks')  # 标出峰值点
+    ax.set_xlabel('Time (ms)')
+    # ax.set_ylabel('Read Out')
+    # ax.set_title(f'Energy of {label} Output')
+    ax.grid()
+    if ylim:
+        ax.set_ylim(ylim)
+    else:
+        ax.set_ylim([np.max([0,np.min(envelope),ax.get_ylim()[0]]), np.max([0.0000001,np.max(envelope),ax.get_ylim()[1]])])
+    ax.fill_between(time, ax.get_ylim()[0], ax.get_ylim()[1], where=input_data[0].squeeze()!=0, color='gray', alpha=0.2)
+    ax.legend(loc = 1, prop={'size':10})
+
 def show_mn(m,n,Sti_nogo,factor_mn,N_E):
 
     # draw the vectors m, n, Sti_nogo in heatmap
@@ -245,6 +273,22 @@ def Generate_RandomMatrix(N_E, N_I, P_EE, P_EI, P_IE, P_II, W_rank1, sigma=0.1):
     W[N_E:, :N_E] = dist.Gamma(a_IE, b_IE).sample((N_I, N_E))
     W[N_E:, N_E:] = dist.Gamma(a_II, b_II).sample((N_I, N_I))
     return W
+# data analysis for peak detection
+def peak_envelope(signal, time,dt):
+    from scipy.signal import find_peaks
+    from scipy.interpolate import interp1d
+    # 1. 检测峰值
+    peaks, _ = find_peaks(signal, distance=15/dt)
+    
+    # 2. 获取峰值点的时间和幅度
+    peak_times = time[peaks]
+    peak_values = signal[peaks]
+    
+    # 3. 插值生成包络线
+    interpolation = interp1d(peak_times, peak_values, kind='cubic', fill_value="extrapolate")
+    envelope = interpolation(time)
+
+    return peaks, peak_times, peak_values, envelope
 
 
 # functions for saving and loading parameters

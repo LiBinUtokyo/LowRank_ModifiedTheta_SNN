@@ -258,12 +258,12 @@ class LowRankSNN(nn.Module):
                 # For Excitatory Neurons
             g[:self.N_E,step] = g[0:self.N_E,step-1] + \
                 (-g[0:self.N_E,step-1]/self.taud_E+ \
-                G_P[0]*conn_EE@spk[:self.N_E,step-1]+ \
+                G_P[0]*conn_EE@spk[:self.N_E,step-1]/dt+ \
                 G_P[1]*conn_EI@spk[self.N_E:self.N_E+self.N_I,step-1]/dt)*dt
                 # For Inhibitory Neurons
             g[self.N_E:self.N_E+self.N_I,step] = g[self.N_E:self.N_E+self.N_I,step-1] + \
                 (-g[self.N_E:self.N_E+self.N_I,step-1]/self.taud_I+ \
-                G_P[2]*conn_IE@spk[:self.N_E,step-1]+ \
+                G_P[2]*conn_IE@spk[:self.N_E,step-1]/dt+ \
                 G_P[3]*conn_II@spk[self.N_E:self.N_E+self.N_I,step-1]/dt)*dt
             
             # Calculate the Synaptic Current
