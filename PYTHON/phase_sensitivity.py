@@ -8,15 +8,23 @@ This is to test the phase sensitivity of the low rank SNNs when doing go-nogo ta
 # import necessary libraries
 import torch
 import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
 from scipy.signal import hilbert
-from scipy.signal import butter, lfilter
 
-from functions import  load_config_yaml, load_init
 from functions import Generate_Vectors, Generate_RandomMatrix
+from functions import show_mn, show_conn
+from functions import Draw_Output, Draw_Conductance,  load_config_yaml, Draw_RasterPlot, Draw_Voltage, Draw_Projection, save_model
+from functions import plot_peak_envelope, peak_envelope
+from functions import load_init
 from lowranksnn import LowRankSNN
+
+
+from pathlib import Path
+import os
 import csv
 import datetime
-import os
+import yaml
 
 
 # Read the configuration file
@@ -62,7 +70,27 @@ for trail in range(trails):
     LRSNN = LowRankSNN(N_E=N_E,N_I=N_I,taud_E=taud_E,taud_I=taud_I,RS=RS)
     # Go_NoGo Task
     # Prepare the Low Rank Connectivity (Rank = 1), Stimuli and Readout Vector
-    m, n, Sti_nogo = Generate_Vectors(N, mu, si)
+    # m, n, Sti_nogo = Generate_Vectors(N, mu, si)
+    i = 0
+    while i<100:
+        m_test, n_test, Sti_nogo_test = Generate_Vectors(N, mu, si)
+        if torch.sum(m_test[:N_E]).abs() < 1 and torch.sum(n_test[:N_E]).abs() < 1 and torch.sum(Sti_nogo_test[:N_E]).abs() < 1:
+            print(N,mu,si)
+            # sum of all the element in m and n and Sti_nogo_test
+            print(torch.sum(m_test[:N_E]))
+            print(torch.sum(n_test[:N_E]))
+            print(torch.sum(Sti_nogo_test[:N_E]))
+            print('i:',i)
+            print('-----------------------------------')
+            m = m_test
+            n = n_test
+            Sti_nogo = Sti_nogo_test
+            break
+        i += 1
+        if i == 100:
+            i = 0
+            print('did not find the suitable m, n, Sti_nogo')
+
     m[N_E:] = 0
     n[N_E:] = 0
     Sti_nogo[N_E:] = 0
@@ -108,14 +136,15 @@ for trail in range(trails):
     # load the values at T_pre
     # to see whether the results are the same
     LRSNN = load_init(LRSNN, T_pre, dt, g_ref, g_ref_EE, g_ref_EI, g_ref_IE, g_ref_II, V_ref, phase_ref, I_ref_syn, I_ref_syn_EE, I_ref_syn_EI, I_ref_syn_IE, I_ref_syn_II, spk_ref)
-
-    g_ref_EE_np = g_ref_EE.clone().cpu().detach().numpy()
+    # do hilbert transform to get the phase of the conductance
     g_ref_II_np = g_ref_II.clone().cpu().detach().numpy()
 
-    # do hilbert transform to get the phase of the conductance
-    signal = np.mean(g_ref_II_np, axis=0)[int(T_pre/dt):]
-    # filter out the high frequency noise in the signal
-    
+    # signal = np.mean(g_ref_II_np, axis=0)[int(T_pre/dt):]
+    # signal = np.mean(g_ref_II_np, axis=0)[int((T_pre-50)/dt):]
+    signal = np.mean(g_ref_II_np, axis=0) # 从0ms开始，结果应该会更稳定
+
+    # # filter out the high frequency noise in the signal
+    # from scipy.signal import butter, lfilter
     # def butter_lowpass_filter(data, cutoff, fs, order=5):
     #     nyquist = 0.5 * fs
     #     normal_cutoff = cutoff / nyquist
@@ -125,43 +154,56 @@ for trail in range(trails):
     # signal = butter_lowpass_filter(signal, 100, 1000/dt, order=5) # cutoff frequency higher than 100 Hz
 
     # centralize the signal
-    signal = signal - np.mean(signal)
+    mean_signal = np.mean(signal)
+    signal = signal - mean_signal
     analytic_signal = hilbert(signal)
+    amplitude_envelope = np.abs(analytic_signal)  # 振幅包络
     instantaneous_phase = np.angle(analytic_signal)  # 相位信息
+    phase_diff = np.diff(instantaneous_phase)  # 相位的一阶导数，即相位变化率
+    t = np.array(range(len(signal)))*dt
 
-    # find out the first minimum phase
-    # take phase_start as -pi, and phase_end as pi
-    flag = 1
-    for i in range(1,len(instantaneous_phase)-1):
-        if flag == 1 and instantaneous_phase[i-1]>instantaneous_phase[i]<instantaneous_phase[i+1] and instantaneous_phase[i]< -3.13:
-            phase_start = instantaneous_phase[i]
-            phase_start_ind = i
-            flag = 0
-            continue
-        if flag == 0 and instantaneous_phase[i-1]<instantaneous_phase[i]>instantaneous_phase[i+1] and instantaneous_phase[i]> 3.13 and (i-phase_start_ind)*dt>10:
-            phase_end = instantaneous_phase[i]
-            phase_end_ind = i
-            flag = -1
-    if flag != -1:
-        # if did not find the phase_end, return error message and jump to the next trail
-        print('Error: did not find the phase_end (or phase_start) in the instantaneous_phase')
-        # store the instantaneous_phase into a file
-        # now = datetime.datetime.now()
-        # np.save('./error_phase_to_reaction_times/instantaneous_phase'+now.strftime('%y%m%d%H%M%S')+'.npy', instantaneous_phase)
-        # np.save('./error_phase_to_reaction_times/signal'+now.strftime('%y%m%d%H%M%S')+'.npy', signal)
-        continue
-    # #read the instantaneous_phase
-    # instantaneous_phase = np.load('./data_phase_to_reaction_times/instantaneous_phase.npy')   
+    # 寻找第一个周期
+    T_pre_ind = int(T_pre/dt)
+    phase_diff_T_pre = phase_diff[T_pre_ind:]
+    # 找到零相位点（相位跨越 2π 的位置）
+    crossings = np.where(phase_diff_T_pre<-3)[0]  # 相位从 pi 到 -pi 跳变的位置
+    # print(phase_diff_T_pre[crossings])
 
-    phases_eff = np.linspace(phase_start, phase_end, num_phase)
+    # 确定第一个周期的起始点和结束点
+    if len(crossings) >= 2:
+        start_index = crossings[0]  # 第一个周期的起始点
+        end_index = crossings[1]  # 第一个完整周期的结束点
+    else:
+        raise ValueError("未能找到完整的周期")
 
-    def nearest_phase_ind(arr, phase_target):
-        return np.argmin(np.abs(arr-phase_target))
+    # 计算第一个周期的起始相位和结束相位
+    start_index += 1 # 过了这个就是第一个周期的开始
+    end_index += 1 # 这样就不用再加1了
+    phase_start = instantaneous_phase[T_pre_ind+start_index]
+    phase_end = instantaneous_phase[T_pre_ind+end_index]
 
-    phases_eff_ind = phase_start_ind + np.array([nearest_phase_ind(instantaneous_phase[phase_start_ind:phase_end_ind+1],phase_target) for phase_target in phases_eff])
-    phases_eff = instantaneous_phase[phases_eff_ind]
+    print('First minimun phase:', phase_start)
+    print('time:', T_pre+start_index*dt, 'ms')
+    print('First maximum phase:', phase_end)
+    print('time:', T_pre+end_index*dt, 'ms')
+    print('period:', (end_index-start_index)*dt, 'ms')
 
-    phases_eff_times = phases_eff_ind*dt # the time of the effective phases after T_pre (ms)
+    from scipy.interpolate import interp1d
+    # obtain the corresponding time of the 33 phases
+    time = t[T_pre_ind+start_index:T_pre_ind+end_index]  # 时间轴
+    phase_period = instantaneous_phase[T_pre_ind+start_index:T_pre_ind+end_index]
+
+    # 生成平均分布的 33 个相位点
+    phase_target = np.linspace(-np.pi, np.pi, num_phase)
+
+    # 使用插值方法找到这些相位对应的时间
+    interp_func = interp1d(phase_period, time, kind='linear', fill_value="extrapolate")
+    time_target = interp_func(phase_target) # the time of the 33 phases after T_pre (ms)
+
+    # 把time_target限定在time的范围内
+    time_target[time_target<=time[0]] = time[0]
+    time_target[time_target>=time[-1]] = time[-1]
+    time_target_ind = (time_target/dt).astype(int) #这里的time_target应该是近似的，所以有可能超过实际的周期时间
 
     #simulation: get the reaction time for different phases
     #store the reaction time for different phases
@@ -173,7 +215,8 @@ for trail in range(trails):
     T_pre_origin = T_pre
     T_after_origin = T_after
 
-    for T_phase in phases_eff_times:
+
+    for T_phase in time_target-T_pre_origin:
         T_pre = T_phase
         T_after = T_after_origin-T_phase # length of time after sti (ms) for the 2nd simulation
         # T = T_pre+T_sti+T_after # length of Period time (ms）
@@ -206,7 +249,6 @@ for trail in range(trails):
 
         Out_go_rec.append(Out_go.cpu().tolist())
         Out_nogo_rec.append(Out_nogo.cpu().tolist())
-        print('Phase: ', phases_eff[phases_eff_times==T_phase])
 
         # g_go_EE = g_go[1]
         # g_nogo_EE = g_nogo[1]
@@ -241,7 +283,7 @@ for trail in range(trails):
     np.save(folder+'/Input_nogo_rec'+'.npy', Input_nogo_rec)
     np.save(folder+'/Out_go_rec'+'.npy', Out_go_rec)
     np.save(folder+'/Out_nogo_rec'+'.npy', Out_nogo_rec)
-    np.save(folder+'/phases_eff'+'.npy', phases_eff)
+    np.save(folder+'/phases'+'.npy', phase_target)
 
 
 
