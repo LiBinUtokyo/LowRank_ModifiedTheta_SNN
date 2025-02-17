@@ -23,27 +23,22 @@ trails: 1 # number of trails
 
 # eta_E: 0.1 # average bias input to E (lorentzian distribution)
 # eta_I: 0.2
-eta_E: 1 # average bias input to E (lorentzian distribution)
-eta_I: 2
+eta_E: 2 # average bias input to E (lorentzian distribution)
+eta_I: 3
 delta_E: 0.04 # variance of bias input to E (lorentzian distribution)
 delta_I: 0.04
 
 mu: 0
-sigma: 0.1
+sigma: 0.2
 sigma_rand: 0.1   # 100/(N_E+N_I)
 
 
 dt: 0.1 #(ms/step)
-# T_pre: 100 # length of time before sti (ms)
-# T_sti: 10 # length of time for sti (ms)
-# T_after: 390 # length of time after sti (ms)
 T_pre: 200 # length of time before sti (ms)
 T_sti: 10 # length of time for sti (ms)
 T_after: 290 # length of time after sti (ms)
-# T_pre: 500 # length of time before sti (ms)
-# T_sti: 10 # length of time for sti (ms)
-# T_after: 290 # length of time after sti (ms)
-InputStrength: 25 #Input Strength (maybe chage to norm in the future)
+
+InputStrength: 10 #Input Strength (maybe chage to norm in the future)
 #5，4，3，2
 
 # norm_input: 1 # Normalization of input
