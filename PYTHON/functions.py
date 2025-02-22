@@ -191,8 +191,9 @@ def show_conn(N,N_E, N_I, P_EE, P_EI, P_IE, P_II,W_rank1,RS,W_random=None):
     # print("非零元素的比例:", np.count_nonzero(W_random) / (N * N))
 
     plt.figure()
-    plt.imshow(W_random,interpolation='nearest')
-    plt.colorbar()
+    plt.imshow(W_random,interpolation='nearest', vmin=0, vmax=1)
+    # set the colorbar to show the value of the matrix(limit the range of the colorbar from 0 to 1)
+    cbar= plt.colorbar(extend='both')
     plt.title('Full Rank matrix')
     plt.show()
     # 展示各部分的平均值

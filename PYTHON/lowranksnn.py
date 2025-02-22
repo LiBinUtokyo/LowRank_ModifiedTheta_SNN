@@ -16,7 +16,8 @@ plt.rcParams.update({'font.size': 30})  #设置所有字体大小
 
 class LowRankSNN(nn.Module):
     # CONSTANTS
-    G_L_E = torch.tensor(0.08)
+    # G_L_E = torch.tensor(0.08) # 没找到依据，所以改成0.1 mS/cm^2
+    G_L_E = torch.tensor(0.1) # 没找到依据，所以改成0.1 mS/cm^2
     G_L_I = torch.tensor(0.1)
     G_P= torch.tensor([0.004069, 0.02672, 0.003276, 0.02138]) #g_peak:[E←E, E←I, I←E, I←I]
     V_T = torch.tensor(-55)
