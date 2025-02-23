@@ -200,7 +200,9 @@ class LowRankSNN(nn.Module):
         conn_EI = self.conn[:self.N_E,self.N_E:self.N_E+self.N_I]
         conn_II = self.conn[self.N_E:self.N_E+self.N_I,self.N_E:self.N_E+self.N_I]
         V = torch.zeros_like(Input).to(Input.device)
+        V[:,0]=self.V_R
         phase = torch.zeros_like(Input).to(Input.device)
+        phase[:,0] = self.V2theta(V[:,0])
 
         # Synaptic Conductance
         g = torch.zeros_like(Input).to(Input.device)

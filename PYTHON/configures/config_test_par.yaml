@@ -26,16 +26,19 @@ trails: 1 # number of trails
 
 # eta_E: 0.1 # average bias input to E (lorentzian distribution)
 # eta_I: 0.2
-eta_E: 2     # average bias input to E (lorentzian distribution)
+# eta_E: 2     # average bias input to E (lorentzian distribution)
+eta_E: 1
 # eta_I: 3
 # eta_I: 1
 # eta_I: 2
 # eta_I: 0.05
-eta_I: 0
+eta_I: 1
 
 # eta_I: 0.05
-delta_E: 0.04 # variance of bias input to E (lorentzian distribution)
-delta_I: 0.04
+# delta_E: 0.04 # variance of bias input to E (lorentzian distribution)
+# delta_I: 0.04
+delta_E: 0.1 # variance of bias input to E (lorentzian distribution)
+delta_I: 0.1
 
 mu: 0
 sigma: 0.2
