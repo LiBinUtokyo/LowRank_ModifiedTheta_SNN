@@ -4,18 +4,20 @@
 # 
 N_E: 800
 N_I: 200
+# N_E: 0
+# N_I: 1000
 # N_E: 3200
 # N_I: 800
 P_EE: 0.1
 P_EI: 0.1
 # P_EI: 0.8
 
-# P_IE: 0.1
-P_IE: 0.05
+P_IE: 0.1
+# P_IE: 0.05
 # P_IE: 0.5
 # P_IE: 0.8
-# P_II: 0.1
-P_II: 0.4
+P_II: 0.2
+# P_II: 0.4
 RandomStrength : 1
 factor_mn: 1 # scaling factor fßor the mean of W_rank1
 taud_E: 2 #synaptic decay time(dont change!)
@@ -27,18 +29,23 @@ trails: 1 # number of trails
 # eta_E: 0.1 # average bias input to E (lorentzian distribution)
 # eta_I: 0.2
 # eta_E: 2     # average bias input to E (lorentzian distribution)
-eta_E: 0.8
+# eta_E: 0.8
+eta_E: 2
 # eta_I: 3
 # eta_I: 1
-# eta_I: 2
+eta_I: 2
 # eta_I: 0.05
-eta_I: 0.8
+# eta_I: 0.8
+# eta_I: 0.1
 
 # eta_I: 0.05
 # delta_E: 0.04 # variance of bias input to E (lorentzian distribution)
 # delta_I: 0.04
-delta_E: 0 # variance of bias input to E (lorentzian distribution)
-delta_I: 0
+# delta_E: 0 # variance of bias input to E (lorentzian distribution)
+# delta_I: 0
+delta_E: 0.04 # variance of bias input to E (lorentzian distribution)
+delta_I: 0.04
+# delta_I: 0
 
 mu: 0
 sigma: 0.2
@@ -51,7 +58,7 @@ T_sti: 10 # length of time for sti (ms)
 # T_after: 290 # length of time after sti (ms)
 T_after: 790 # length of time after sti (ms)
 
-InputStrength: 0 #Input Strength (maybe chage to norm in the future)
+InputStrength: 10 #Input Strength (maybe chage to norm in the future)
 #5，4，3，2
 
 # norm_input: 1 # Normalization of input
