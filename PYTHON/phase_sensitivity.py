@@ -137,11 +137,14 @@ for trail in range(trails):
     # to see whether the results are the same
     LRSNN = load_init(LRSNN, T_pre, dt, g_ref, g_ref_EE, g_ref_EI, g_ref_IE, g_ref_II, V_ref, phase_ref, I_ref_syn, I_ref_syn_EE, I_ref_syn_EI, I_ref_syn_IE, I_ref_syn_II, spk_ref)
     # do hilbert transform to get the phase of the conductance
-    g_ref_II_np = g_ref_II.clone().cpu().detach().numpy()
+    # g_ref_II_np = g_ref_II.clone().cpu().detach().numpy()
+    g_ref_EE_np = g_ref_EE.clone().cpu().detach().numpy()
 
     # signal = np.mean(g_ref_II_np, axis=0)[int(T_pre/dt):]
     # signal = np.mean(g_ref_II_np, axis=0)[int((T_pre-50)/dt):]
-    signal = np.mean(g_ref_II_np, axis=0) # 从0ms开始，结果应该会更稳定
+    # signal = np.mean(g_ref_II_np, axis=0) # 从0ms开始，结果应该会更稳定
+    signal = np.mean(g_ref_EE_np, axis=0) # 从0ms开始，结果应该会更稳定
+    
 
     # # filter out the high frequency noise in the signal
     # from scipy.signal import butter, lfilter
@@ -244,8 +247,8 @@ for trail in range(trails):
 
         # Note: initial values has been loaded
         # Start Simulation
-        Out_go, _,_,_, _,_,_,_ = LRSNN(dt,Input_go+bias)
-        Out_nogo, _,_,_, _,_,_,_ = LRSNN(dt,Input_nogo+bias)
+        Out_go, _,g_go,_, _,_,_,_ = LRSNN(dt,Input_go+bias)
+        Out_nogo, _,g_nogo,_, _,_,_,_ = LRSNN(dt,Input_nogo+bias)
 
         Out_go_rec.append(Out_go.cpu().tolist())
         Out_nogo_rec.append(Out_nogo.cpu().tolist())
@@ -284,6 +287,8 @@ for trail in range(trails):
     np.save(folder+'/Out_go_rec'+'.npy', Out_go_rec)
     np.save(folder+'/Out_nogo_rec'+'.npy', Out_nogo_rec)
     np.save(folder+'/phases'+'.npy', phase_target)
+    np.save(folder+'/g_go'+'.npy', g_go)
+    np.save(folder+'/g_nogo'+'.npy', g_nogo)
 
 
 

@@ -174,7 +174,7 @@ def show_mn(m,n,Sti_nogo,factor_mn,N_E):
     plt.figure()
     plt.imshow(W_rank1,interpolation='nearest')
     plt.colorbar()
-    plt.title('Rank-1 matrix')
+    plt.title('Rank-1 matrix )')
     plt.show()
     # 展示各部分的平均值
     print("Rank-1 matrix average value_EtoE:", torch.mean(W_rank1[:N_E, :N_E]))
