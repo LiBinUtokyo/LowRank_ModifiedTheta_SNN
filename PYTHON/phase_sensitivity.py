@@ -247,8 +247,8 @@ for trail in range(trails):
 
         # Note: initial values has been loaded
         # Start Simulation
-        Out_go, _,g_go,_, _,_,_,_ = LRSNN(dt,Input_go+bias)
-        Out_nogo, _,g_nogo,_, _,_,_,_ = LRSNN(dt,Input_nogo+bias)
+        Out_go, _,_,_, _,_,_,_ = LRSNN(dt,Input_go+bias)
+        Out_nogo, _,_,_, _,_,_,_ = LRSNN(dt,Input_nogo+bias)
 
         Out_go_rec.append(Out_go.cpu().tolist())
         Out_nogo_rec.append(Out_nogo.cpu().tolist())
@@ -287,8 +287,8 @@ for trail in range(trails):
     np.save(folder+'/Out_go_rec'+'.npy', Out_go_rec)
     np.save(folder+'/Out_nogo_rec'+'.npy', Out_nogo_rec)
     np.save(folder+'/phases'+'.npy', phase_target)
-    np.save(folder+'/g_go'+'.npy', g_go)
-    np.save(folder+'/g_nogo'+'.npy', g_nogo)
+    # np.save(folder+'/g_go'+'.npy', g_go)
+    # np.save(folder+'/g_nogo'+'.npy', g_nogo)
 
 
 
