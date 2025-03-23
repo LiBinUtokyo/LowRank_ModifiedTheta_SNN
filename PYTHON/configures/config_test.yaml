@@ -31,7 +31,7 @@ dt: 0.1 #(ms/step)
 T_pre: 200 # length of time before sti (ms)
 T_sti: 10 # length of time for sti (ms)
 
-T_after: 790 # length of time after sti (ms)
+T_after: 390 # length of time after sti (ms)
 
 InputStrength: 10 #Input Strength (maybe chage to norm in the future)
 #10
