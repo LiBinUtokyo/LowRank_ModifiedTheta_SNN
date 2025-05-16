@@ -5,7 +5,7 @@ N_I: 200
 P_EE: 0.1
 P_EI: 0.1
 P_IE: 0.1
-P_II: 0.3
+P_II: 0.2
 RandomStrength : 1
 factor_mn: 1 # scaling factor = 1/N (1/N_E if lowrank only for E2E)
 # factor_mn: 0.00125 # scaling factor = 1/N (1/N_E if lowrank only for E2E)
@@ -16,8 +16,8 @@ taud_I: 5 #synaptic decay time
 num_phase: 9 # number of phases to test
 trails: 1 # number of trails
 
-eta_E: 0.1
-eta_I: 0.1
+eta_E: 2
+eta_I: 2
 
 delta_E: 0.04 # variance of bias input to E (lorentzian distribution)
 delta_I: 0.04
