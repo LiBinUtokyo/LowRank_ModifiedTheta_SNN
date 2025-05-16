@@ -1,0 +1,177 @@
+# my Macroscopic Model for voltage-dependent theta model
+# refer to akao's thesis
+
+# OA with noise
+# 2020.6.21 created by Tianyi Zheng
+
+# parameters
+# average excitability
+# param eta_I = 1
+param eta_I = 2
+# param eta_I = 0
+# param del_I = 0.04
+del_I = 0.04
+# param eta_E = 1
+# param eta_E = 0
+# param del_E = 0.04
+eta_E = eta_I
+del_E = 0.04
+
+# reversal potential
+vsyn_I = -70
+vsyn_E = 0
+# firing threshold (both excitatory and inhibitory)
+vt_I = -55
+vt_E = -55
+# connect
+# param psyn_I2I = 0.4
+param psyn_I2I = 0.1
+param psyn_I2E = 0.1
+# param psyn_E2I = 0.05
+param psyn_E2I = 0.1
+param psyn_E2E = 0.1
+# param psyn_E2I = 0
+# param psyn_E2E = 0
+
+C = 1
+# area of neural population
+a_o_n = 2.9*10^(-4)*10^(6)
+# gL leakage conductance
+gl_I = 0.1
+gl_E = 0.1
+
+# VR resting potential (both excitatory and inhibitory)
+vr_I = -62
+vr_E = -62
+
+# C1
+c1_I = 2/(vt_I-vr_I)
+c1_E = 2/(vt_E-vr_E)
+# C2
+c2_I = (2*vsyn_I-vt_I-vr_I)/(vt_I-vr_I)
+c2_E = (2*vsyn_E-vt_E-vr_E)/(vt_E-vr_E)
+# N
+param ne_num_I = 200
+param ne_num_E = 800
+# param ne_num_I = 1000
+# param ne_num_E = 0
+
+## I2I
+        # tau_d decay time constant
+        td_I2I = 5
+        # gpeak
+#         g_peak_I2I = 6.2
+        g_peak_I2I = 0.021379
+        # g*p*N
+#         gpn_I2I = g_peak_I2I/a_o_n*ne_num_I*psyn_I2I
+gpn_I2I = g_peak_I2I*ne_num_I*psyn_I2I
+
+## I2E
+        # tau_d decay time constant
+        td_I2E = 5
+        # gpeak
+#         g_peak_I2E = 7.77
+        g_peak_I2E = 0.026724
+        # g*p*N
+#         gpn_I2E = g_peak_I2E/a_o_n*ne_num_E*psyn_I2E
+        gpn_I2E = g_peak_I2E*ne_num_E*psyn_I2E
+
+## E2I
+        # tau_d decay time constant
+        td_E2I = 2
+        # gpeak
+#         g_peak_E2I = 0.95
+        g_peak_E2I = 0.0032759
+        # g*p*N
+#         gpn_E2I = g_peak_E2I/a_o_n*ne_num_I*psyn_E2I
+        gpn_E2I = g_peak_E2I*ne_num_I*psyn_E2I
+
+## E2E
+        # tau_d decay time constant
+        td_E2E = 2
+        # gpeak
+#         g_peak_E2E = 1.18
+        g_peak_E2E = 0.004069
+        # g*p*N
+#         gpn_E2E = g_peak_E2E/a_o_n*ne_num_E*psyn_E2E
+        gpn_E2E = g_peak_E2E*ne_num_E*psyn_E2E
+
+# no cross
+# 
+# summary_I = (c2_I*gsyn_I2I+c2_E*gsyn_E2I)
+# 
+# summary_E = (c2_I*gsyn_I2E+c2_E*gsyn_E2E)
+
+####################
+
+    fz1_I = (-z1_I*z2_I/C*(-gl_I + c1_I*eta_I + (c2_I*gsyn_I2I + c2_E*gsyn_E2I)) - \
+             0.5*del_I*c1_I/C*(z1_I^2-z2_I^2) + \
+             0.5*(c2_I*gsyn_I2I + c2_E*gsyn_E2I)/C*(z1_I^2-z2_I^2)-\
+             z2_I/C*(c1_I*eta_I + (c2_I*gsyn_I2I + c2_E*gsyn_E2I)) -\
+             del_I*c1_I/C*z1_I -\
+             0.5 * del_I * c1_I / C -\
+             0.5 * (c2_I*gsyn_I2I + c2_E*gsyn_E2I) / C)
+
+    fz2_I = (0.5*(z1_I^2-z2_I^2)/C*(-gl_I + c1_I*eta_I + (c2_I*gsyn_I2I + c2_E*gsyn_E2I)) +\
+             z1_I*z2_I*(del_I*c1_I+(c2_I*gsyn_I2I + c2_E*gsyn_E2I))/C + \
+             z1_I/C*(c1_I*eta_I + (c2_I*gsyn_I2I + c2_E*gsyn_E2I)) -\
+             del_I*c1_I/C*z2_I +\
+             0.5 / C * (-gl_I + c1_I * eta_I + (c2_I * gsyn_I2I + c2_E * gsyn_E2I)))
+
+
+    # 计算 E 型神经元 z 变量的微分
+    fz1_E = (-z1_E*z2_E/C*(-gl_E + c1_E*eta_E + (c2_I*gsyn_I2E + c2_E*gsyn_E2E)) -\
+                0.5*del_E*c1_E/C*(z1_E^2-z2_E^2) +\
+                0.5*(c2_I*gsyn_I2E + c2_E*gsyn_E2E)/C*(z1_E^2-z2_E^2)-\
+                z2_E/C*(c1_E*eta_E + (c2_I*gsyn_I2E + c2_E*gsyn_E2E)) -\
+                del_E*c1_E/C*z1_E -\
+                0.5 * del_E * c1_E / C -\
+                0.5 * (c2_I*gsyn_I2E + c2_E*gsyn_E2E) / C)
+    
+    fz2_E = (0.5*(z1_E^2-z2_E^2)/C*(-gl_E + c1_E*eta_E + (c2_I*gsyn_I2E + c2_E*gsyn_E2E)) +\
+                z1_E*z2_E*(del_E*c1_E+(c2_I*gsyn_I2E + c2_E*gsyn_E2E))/C + \
+                z1_E/C*(c1_E*eta_E + (c2_I*gsyn_I2E + c2_E*gsyn_E2E)) -\
+                del_E*c1_E/C*z2_E +\
+                0.5 / C * (-gl_E + c1_E * eta_E + (c2_I * gsyn_I2E + c2_E * gsyn_E2E)))
+
+# firing rate
+fr_I = 0.5*gl_I/Pi/C*(1-z1_I^2-z2_I^2)/((1+z1_I)^2+z2_I^2)
+fr_E = 0.5*gl_E/Pi/C*(1-z1_E^2-z2_E^2)/((1+z1_E)^2+z2_E^2)
+# fr_E = 0
+
+aux fire_I = fr_I
+aux fire_E = fr_E
+
+fgsyn_I2I = (-1/td_I2I)*gsyn_I2I + gpn_I2I*fr_I
+fgsyn_I2E = (-1/td_I2E)*gsyn_I2E + gpn_I2E*fr_I
+fgsyn_E2I = (-1/td_E2I)*gsyn_E2I + gpn_E2I*fr_E
+fgsyn_E2E = (-1/td_E2E)*gsyn_E2E + gpn_E2E*fr_E
+
+#dynamicalvariables
+gsyn_I2I' = fgsyn_I2I
+gsyn_I2E' = fgsyn_I2E
+gsyn_E2I' = fgsyn_E2I
+gsyn_E2E' = fgsyn_E2E
+
+z1_I' = fz1_I
+z2_I' = fz2_I
+z1_E' = fz1_E
+z2_E' = fz2_E
+
+
+#initial value
+# gsyn_I2I(0)=0
+# gsyn_I2E(0)=0
+# gsyn_E2I(0)=0
+# gsyn_E2E(0)=0
+gsyn_I2I(0)=0
+gsyn_I2E(0)=0
+gsyn_E2I(0)=0
+gsyn_E2E(0)=0
+
+@ total=1000,meth=euler, dt=0.01
+# to increase the maximum storage capacity
+@ maxstor=10000000
+
+
+done
